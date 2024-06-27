@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{ template "head.html" }}
+</head>
+<body style="background-color: #1d1d1d; overflow-x: hidden;">
+    <div class="align-items-center p-2 mb-4" style="height: 80px; background-color: #212121;">
+        <div class="d-flex align-items-center ms-2">
+            <img src="/assets/muak.jpg" alt="" width="60" height="60" class="me-2 rounded-1" />
+            <div class="row">
+                <span class="text-white" style="font-weight: 600; font-size: larger;">Mas Rudi</span>
+                <span class="text-white-50">Tukang Cukur</span>
+            </div>
+        </div>
+    </div>
+    <div id="tempat_chat">
+        <p class="p-2 m-2 text-white" style="word-break: break-all; white-space: pre-line; background-color: grey;">*Hugging him tightly* It feels really nice to have you here, John.
+        </p>
+    </div>
+    <div class="position-fixed h-auto w-100 bottom-0" style="background-color: #212121;">
+        <div class="d-flex">
+            <textarea id="pesan" class="p-2 text-white" type="text" style="background-color: #212121; border: 0; outline: none; height: 60px; resize: none; width: 100%" placeholder="Message"></textarea>
+            <button class="p-2 btn btn-success" type="button" id="button-addon2" onclick="KlikSend()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        function KlikSend() {
+            const pesan = $('#pesan').val();
+            $("#tempat_chat").append(`
+            <p class="p-2 m-2 text-white" style="word-break: break-all; white-space: pre-line; background-color: green;">${pesan}</p>
+            `)
+            $('#pesan').val("");
+
+            $.ajax({
+                url: "/chat",
+                type: "POST",
+                data: JSON.stringify({ "chat": pesan }),
+                contentType: "application/json"
+            }).done(v => {
+                $("#tempat_chat").append(`
+                <p class="p-2 m-2 text-white" style="word-break: break-all; white-space: pre-line; background-color: grey;">${v.chat}</p>
+                `)
+            })
+        }
+    </script>
+    {{ template "body.html" }}
+</body>
+</html>
