@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{ template "head.html" }}
+    <style>
+        .background-hijau {
+            background-color: green;
+        }
+
+        .background-abuabu {
+            background-color: grey;
+        }
+
+        .text-awal {
+            white-space: pre-line;
+            width: 100%;
+        }
+
+        .ulangi-pesan {
+            background-color: transparent;
+            background-repeat: no-repeat;
+            border: none;
+            font-weight: bolder;
+        }
+
+        .btn-primary {
+            background-color: grey;
+            border-color: rgb(167, 167, 167);
+        }
+
+        .btn-primary:hover {
+            background-color: rgb(144, 144, 144);
+            border-color: rgb(167, 167, 167);
+        }
+
+        .btn-success .btn-check:checked+.btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check)+.btn:active {
+            background-color: rgb(144, 144, 144);
+            border-color: rgb(167, 167, 167);
+        }
+
+        #tempat_chat::-webkit-scrollbar {
+            display: none;
+        }
+
+        #sarankalimatdiv {
+            color: white;
+            background-color: rgb(144, 144, 144);
+            border: 1px solid rgb(167, 167, 167);
+            border-radius: .375rem;
+            overflow-y: scroll;
+        }
+
+        #sarankalimatdiv::-webkit-scrollbar {
+            display: none;
+        }
+
+        .loader {
+            width: 60px;
+            aspect-ratio: 4;
+            --_g: no-repeat radial-gradient(circle closest-side,#e2e2e2 90%,#0000);
+            background: 
+                var(--_g) 0%   50%,
+                var(--_g) 50%  50%,
+                var(--_g) 100% 50%;
+            background-size: calc(100%/3) 100%;
+            animation: l7 1s infinite linear;
+        }
+        @keyframes l7 {
+            33%{background-size:calc(100%/3) 0%  ,calc(100%/3) 100%,calc(100%/3) 100%}
+            50%{background-size:calc(100%/3) 100%,calc(100%/3) 0%  ,calc(100%/3) 100%}
+            66%{background-size:calc(100%/3) 100%,calc(100%/3) 100%,calc(100%/3) 0%  }
+        }
+    </style>
+</head>
+<body style="background-color: #1d1d1d; overflow-x: hidden;">
+    <div class="align-items-center p-2 mb-2" style="height: 70px; background-color: #212121;">
+        <div class="d-flex align-items-center ms-2">
+            <img src="/assets/muak.jpg" alt="" width="50" height="50" class="me-2 rounded-1" />
+            <div class="row">
+                <span class="text-white" style="font-weight: 600; font-size: larger;">Mas Rudi</span>
+                <span class="text-white-50">Tukang Cukur</span>
+            </div>
+        </div>
+    </div>
+    <div>
+        <div id="tempat_chat" style="height: calc(100dvh - 138px); overflow-y: scroll;">
+            <!-- <p id="text-awal" class="p-2 m-2 text-white" style="word-break: break-all; white-space: pre-line; background-color: grey;">*Hugging him tightly* It feels really nice to have you here, John.</p> -->
+            {{ $user := "user" }}
+            {{ $panjangChat := .PanjangChat}}
+            {{ range $index, $element := .isi }}
+            <div class="d-flex mx-2 mb-2">
+                <div class="p-2 text-white text-awal {{ if eq $element.Role $user }}background-hijau{{ else }}background-abuabu{{ end }}">{{ index $element.Parts 0 }}</div>            
+                {{ if and (ne $index 0) (ne $element.Role $user) (eq $index $panjangChat) }}
+                <button class="mx-1 text-white ulangi-pesan" type="button" onclick="UlangiPesan()">
+                    <i class="bi bi-arrow-repeat h4"></i>
+                </button>
+                {{ end }}
+            </div>
+            {{ end }}  
+        </div>
+
+        <div class="h-auto w-100" style="background-color: #212121;">
+            <div class="d-flex">
+                <textarea id="pesan" class="p-2 text-white" type="text" style="background-color: #212121; border: 0; outline: none; height: 60px; resize: none; width: 100%" placeholder="Message" required></textarea>
+                <button class="px-4 btn btn-success" type="button" onclick="KlikSend()">Send</button>
+            </div>
+        </div>
+    </div>
+    <div class="end-0" id="loader-sarankalimat" style="position: fixed; height: auto; bottom: 75px; max-width: 150px; z-index: 999; width: 100px; height: 25px; display: none;">
+        <div class="loader"></div>
+    </div>
+    <div class="end-0" id="sarankalimat" style="position: fixed; height: auto; bottom: 75px; max-width: 150px;">
+        <button class="btn btn-primary" onclick="SaranKalimat()">Continue as me</button>
+    </div>
+    <div class="end-0" id="sarankalimatdiv" style="position: fixed; height: auto; bottom: 125px; max-height: 150px; max-width: 150px; display: none">
+        <button class="text-white" id="text-sarankalimat" style="height: 100px; background: none; border: none;">TEST</button>
+    </div>
+    <!--
+    <div class="position-fixed h-auto w-100 bottom-0" style="background-color: #212121;">
+        <div class="d-flex">
+            <textarea id="pesan" class="p-2 text-white" type="text" style="background-color: #212121; border: 0; outline: none; height: 60px; resize: none; width: 100%" placeholder="Message" required></textarea>
+            <button class="px-4 btn btn-success" type="button" onclick="KlikSend()">Send</button>
+        </div>
+    </div>
+    -->
+    
+    {{ template "body.html" }}
+
+    <script>
+        function RenderText(text) {
+            return text.replace(/\*(.*?)\*/g, "<b><i>$1</i></b>")
+        }
+
+        function KlikSend() {
+            const pesan = $('#pesan').val();
+
+            if(pesan === "") {
+                return;
+            }
+
+            $("#tempat_chat").append(`
+            <div class="d-flex mx-2 mb-2">
+                <div class="p-2 text-white text-awal background-hijau">${RenderText(pesan)}</div>
+            </div>
+            `)
+            $('#pesan').val("");
+            $("#sarankalimat").css("display", "block");
+            $("#loader-sarankalimat").css("display", "none");
+            $("#text-sarankalimat").parent().css("display", "none");
+
+            $.ajax({
+                url: "/chat",
+                type: "POST",
+                data: JSON.stringify({ "id": "{{ .idChat }}", "chat": pesan }),
+                contentType: "application/json"
+            }).done(v => {
+                if(v.chat === undefined) {
+                    return;
+                }
+
+                $("button.ulangi-pesan").remove();
+
+                $("#tempat_chat").append(`
+                <div class="d-flex mx-2 mb-2">
+                    <div class="p-2 text-white text-awal background-abuabu">${RenderText(v.chat)}</div>
+                    <button class="mx-1 text-white ulangi-pesan" style="background-color: transparent; background-repeat: no-repeat; border: none; font-weight: bolder;" type="button" onclick="UlangiPesan()">
+                        <i class="bi bi-arrow-repeat h4"></i>
+                    </button>
+                </div>
+                `)
+            })
+        }
+
+        function UlangiPesan() {
+            const IsiOmongan =$("#tempat_chat").children("div");
+            IsiOmongan[IsiOmongan.length - 1].remove();
+
+            $.ajax({
+                url: "/chat/ulangipesan",
+                type: "POST",
+                data: "",
+                contentType: "application/json"
+            }).done(v => {
+                if(v.chat === undefined) {
+                    return;
+                }
+
+                $("#tempat_chat").append(`
+                <div class="d-flex mx-2 mb-2">
+                    <div class="p-2 text-white text-awal background-abuabu">${RenderText(v.chat)}</div>
+                    <button class="mx-1 text-white ulangi-pesan" style="background-color: transparent; background-repeat: no-repeat; border: none; font-weight: bolder;" type="button" onclick="UlangiPesan()">
+                        <i class="bi bi-arrow-repeat h4"></i>
+                    </button>
+                </div>
+                `)
+            });
+        }
+
+        let SaranKalimatText = "";
+
+        function SaranKalimat() {
+            $("#sarankalimat").css("display", "none");
+            $("#loader-sarankalimat").css("display", "block");
+
+            $.ajax({
+                url: "/chat/sarankalimat",
+                type: "POST",
+                data: "",
+                contentType: "application/json"
+            }).done(v => {
+                $("#sarankalimat").css("display", "block");
+                $("#loader-sarankalimat").css("display", "none");
+                $("#text-sarankalimat").parent().css("display", "none");
+
+                if(v.chat === undefined) {
+                    return;
+                }
+
+                $("#text-sarankalimat").text(v.chat);
+                $("#text-sarankalimat").parent().css("display", "block");
+                SaranKalimatText = v.chat;
+            });
+        }
+
+        $(".text-awal").each((v, e) => {
+            const elemn = $(e);
+            elemn.html(RenderText(elemn.text()))
+        })
+
+        $("#sarankalimatdiv").on("click", () => {
+            $("#pesan").val(SaranKalimatText);
+            $("#text-sarankalimat").parent().css("display", "none");
+        })
+    </script>
+</body>
+</html>
