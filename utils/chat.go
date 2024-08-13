@@ -2,7 +2,9 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
@@ -12,7 +14,7 @@ var ctx context.Context = context.Background()
 
 func ClientGenAI() *genai.Client {
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBkb0d6bCmB4Zc38-kq7JcG7CphgnXahQk"))
+	client, err := genai.NewClient(ctx, option.WithAPIKey(DapatinEnvVariable("GEMINI_AI")))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,10 +49,11 @@ func BuatModel(client *genai.Client, SystemInstruction *genai.Content) *genai.Ge
 	return model
 }
 
-func BuatChat(client *genai.Client, history []*genai.Content) *genai.ChatSession {
+func BuatChat(client *genai.Client, karakter Karakter, personalitas Personalitas, history []*genai.Content) *genai.ChatSession {
 	model := BuatModel(client, &genai.Content{
 		Parts: []genai.Part{
-			genai.Text("Your name is Rudi, You are a man and a barber who runs a barbershop, suddenly a customer named John comes to your shop getting a haircut"),
+			genai.Text(fmt.Sprintf("Your name is %s, ", karakter.Nama) + strings.ReplaceAll(strings.ReplaceAll(karakter.Personalitas, "{{char}}", karakter.Nama), "{{user}}", personalitas.Nama)),
+			// genai.Text("Your name is Rudi, You are a man and a barber who runs a barbershop, suddenly a customer named John comes to your shop getting a haircut"),
 			// genai.Text("Your name is Sarah, You like playing games and studying and currently you have a boyfriend named John. You are now in his house"),
 		},
 		Role: "model",
@@ -62,7 +65,8 @@ func BuatChat(client *genai.Client, history []*genai.Content) *genai.ChatSession
 		historyChat = append([]*genai.Content{
 			{
 				Parts: []genai.Part{
-					genai.Text("*Smiles at him* Hello! Welcome to my barbershop! Please sit on the chair."),
+					// genai.Text("*Smiles at him* Hello! Welcome to my barbershop! Please sit on the chair."),
+					genai.Text(strings.ReplaceAll(strings.ReplaceAll(karakter.Chat, "{{char}}", karakter.Nama), "{{user}}", personalitas.Nama)),
 				},
 				Role: "model",
 			},

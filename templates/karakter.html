@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{ template "head.html" }}
+    <style>
+        .btn-success {
+            background-color: grey;
+            border-color: rgb(167, 167, 167);
+        }
+
+        .btn-success:hover, .btn-success:focus {
+            background-color: rgb(144, 144, 144);
+            border-color: rgb(167, 167, 167) !important;
+        }
+
+        .btn-check:checked+.btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check)+.btn:active {
+            background-color: rgb(144, 144, 144);
+            border-color: rgb(167, 167, 167);
+        }
+
+        .form-control, .form-select {
+            color: white !important;
+            background-color: #2d2d2d;
+            border-color: rgb(80, 80, 80);
+        }
+
+        .form-control:focus {
+            box-shadow: none !important;
+            background-color: #2d2d2d;
+            border-color: rgb(97, 97, 97);
+        } 
+
+        .form-control::placeholder {
+            color: grey;
+        }
+
+        .gambar:hover {
+            cursor: pointer;
+        }
+
+        hr {
+            color: white;
+        }
+    </style>
+</head>
+<body style="background-color: #1d1d1d; overflow-x: hidden;">
+    {{ template "navbar" .akun }}
+
+    <div class="container">
+        <div class="text-white h3 mt-3">Create Character</div>
+        <hr class="text-white">
+        <div class="row mt-3">
+            <div class="col-md-8">
+                <form action="/karakter" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="status" value="{{ if .karakter }}edit{{ else }}buat{{ end }}" />
+                    <input type="hidden" name="idkarakter" value="{{ .karakter.ID }}" />
+                    <input type="file" id="foto" name="foto" accept="image/*" onchange="GantiGambar(this)" hidden />
+                    <div class="row">
+                        <div class="col">
+                            <input type="text" class="form-control" placeholder="Name" name="nama" value="{{ .karakter.Nama }}">
+                        </div>
+                        <div class="col">
+                            <input type="text" class="form-control" placeholder="Tag Line" name="namalain" value="{{ .karakter.NamaLain }}">
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="text-white">&#123;&#123;char&#125;&#125; for the name of your character</div>
+                    <div class="text-white">&#123;&#123;user&#125;&#125; for user's username</div>
+                    <div class="mt-3">
+                        <textarea class="form-control" placeholder="Personality: Loves to play game" name="personalitas" style="height: 100px">{{ .karakter.Personalitas }}</textarea>
+                    </div>
+                    <div class="mt-3">
+                        <textarea class="form-control" placeholder="Start of Conversation: Hey! What you doing?" name="chat" style="height: 100px">{{ .karakter.Chat }}</textarea>
+                    </div>
+                    <hr />
+                    <div class="d-flex mt-3">
+                        <div class="flex-grow-1">
+                            <select class="form-select" name="kategori">
+                                <option value="Anime" {{ if eq .karakter.Kategori "Anime"}}selected{{end}}>Anime</option>
+                                <option value="Comic" {{ if eq .karakter.Kategori "Comic"}}selected{{end}}>Comic</option>
+                                <option value="Movie" {{ if eq .karakter.Kategori "Movie"}}selected{{end}}>Movie</option>
+                                <option value="Girl" {{ if eq .karakter.Kategori "Girl"}}selected{{end}}>Girl</option>
+                                <option value="Boy" {{ if eq .karakter.Kategori "Boy"}}selected{{end}}>Boy</option>
+                            </select>
+                        </div>
+                        <div class="ms-3">
+                            <button class="btn btn-success w-100">Submit</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="col-6 col-md-4">
+                <img src="{{ if .karakter.Gambar }} {{ .karakter.Gambar }} {{ else }}/assets/no-users.png{{ end }}" id="gambar-karakter" class="gambar" width="200" height="200" style="background-color: grey;" onclick="document.getElementById('foto').click()" />
+            </div>
+        </div>
+    </div>  
+    
+    {{ template "body.html" }}
+
+    <script>
+        let objectURL
+
+        function GantiGambar(e) {
+            if(!e.files && e.files.length === 0) {
+                return;
+            }
+
+            if(objectURL) {
+                URL.revokeObjectURL(objectURL);
+            }
+
+            objectURL = URL.createObjectURL(e.files[0]);
+            document.getElementById("gambar-karakter").src = objectURL;
+        }
+    </script>
+</body>
+</html>

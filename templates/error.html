@@ -65,21 +65,18 @@
 <body class="text-white" style="background-color: #1d1d1d; overflow-x: hidden;">
     {{ template "navbar" .akun }}
 
-    <div class="container-fluid">
-        <h3 class="text-white mt-3">Character Trending</h3>
-        <div class="row-fluid">
-            <div class="col-lg-12 col-md-10">
-                <div class="cover-container">
-                    {{ range $element := .karakter }}
-                    <a class="cover-item gambar-trending" href="/chat/{{ $element.ID }}" style="background-image: url('{{ $element.Gambar }}');">
-                        <div class="position-absolute position-absolute bottom-0 start-0 m-2 text-gambar-trending">{{ $element.Nama }}</div>
-                        <div class="position-absolute position-absolute bottom-0 end-0 m-2 text-gambar-trending">{{ $element.Kategori }}</div>
-                    </a>
-                    {{ end }}
+    <div class="d-flex flex-row align-items-center" style="height: 90dvh;">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-12 text-center">
+                    <span class="display-1 d-block">{{ .kode }}</span>
+                    <div class="mb-4 lead">{{ .isi }}</div>
+                    <a href="/" class="btn btn-link">Home</a>
                 </div>
             </div>
         </div>
     </div>
+    
 
     {{ template "body.html" }}
 </body>

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
+	"os"
+	"strconv"
 
 	"strings"
 
@@ -13,11 +16,19 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/google/generative-ai-go/genai"
+	// "github.com/google/uuid"
 )
 
 type CHAT struct {
 	Id   string `json:"id"`
 	Chat string `json:"chat"`
+}
+
+type StatusPeronsalitas struct {
+	Status       string `json:"status"`
+	ID           string `json:"id"`
+	Nama         string `json:"nama"`
+	Personalitas string `json:"personalitas"`
 }
 
 var secret = []byte("Rahasia")
@@ -38,12 +49,15 @@ func CheckAutentikasi(status string) gin.HandlerFunc {
 			}
 
 			db := database.GetDatabase()
-			akun := database.Akun{}
+			akun := utils.DapatinAkun(db, session, nil)
 
-			db.First(&akun, user)
-
+			// fmt.Println("ID: " + akun.ID.String())
 			if akun.ID == 0 {
 				session.Delete("user")
+				session.Save()
+
+				ctx.Redirect(http.StatusFound, "/login")
+				return
 			}
 
 			session.Save()
@@ -51,6 +65,20 @@ func CheckAutentikasi(status string) gin.HandlerFunc {
 		}
 
 		if status == "login" && user != nil {
+			db := database.GetDatabase()
+			akun := utils.DapatinAkun(db, session, nil)
+
+			fmt.Println(akun.ID)
+
+			// fmt.Println("ID: " + akun.ID.String())
+			if akun.ID == 0 {
+				fmt.Println("HANCUR!")
+				session.Delete("user")
+				session.Save()
+				ctx.Redirect(http.StatusFound, "/login")
+				return
+			}
+
 			ctx.Redirect(http.StatusFound, "/")
 			return
 		}
@@ -75,18 +103,21 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	r.StaticFile("/favicon.ico", "./assets/IconPer.png")
 	r.Use(sessions.Sessions("session", cookie.NewStore(secret)))
+	r.MaxMultipartMemory = 5 << 20
 
 	r.GET("/", func(ctx *gin.Context) {
 		db := database.GetDatabase()
 		session := sessions.Default(ctx)
-		user := session.Get("user")
 
-		var akun database.Akun
-		db.First(&akun, user)
+		akun := utils.DapatinAkun(db, session, nil)
+
+		var SemuaKarakter []utils.Karakter
+		db.Find(&SemuaKarakter)
 
 		ctx.HTML(http.StatusOK, "index.html", gin.H{
-			"title": "Main",
-			"akun":  akun,
+			"title":    "Main",
+			"akun":     akun,
+			"karakter": SemuaKarakter,
 		})
 	})
 
@@ -123,33 +154,164 @@ func main() {
 			session := sessions.Default(ctx)
 			user := session.Get("user")
 
-			var akun database.Akun
+			var akun utils.Akun
 			db.First(&akun, user)
 
-			ctx.HTML(http.StatusOK, "buatkarakter.html", gin.H{
+			ctx.HTML(http.StatusOK, "karakter.html", gin.H{
 				"title": "Create Character",
 				"akun":  akun,
 			})
 		})
 
+		redirectLoginAutentikasi.GET("/editkarakter/:idkarakter", func(ctx *gin.Context) {
+			db := database.GetDatabase()
+			session := sessions.Default(ctx)
+			user := session.Get("user")
+
+			var akun utils.Akun
+			db.First(&akun, user)
+
+			var karakter utils.Karakter
+			db.Where("ID = ?", ctx.Param("idkarakter")).First(&karakter)
+
+			if karakter.AkunID != akun.ID {
+				ctx.HTML(http.StatusNotFound, "error.html", gin.H{
+					"title": "Error",
+					"akun":  akun,
+					"kode":  404,
+					"isi":   "Character not found",
+				})
+				return
+			}
+
+			ctx.HTML(http.StatusOK, "karakter.html", gin.H{
+				"title":    "Edit Character",
+				"akun":     akun,
+				"karakter": karakter,
+			})
+		})
+
+		redirectLoginAutentikasi.POST("/karakter/", func(ctx *gin.Context) {
+			db := database.GetDatabase()
+			session := sessions.Default(ctx)
+			user := session.Get("user")
+
+			var akun utils.Akun
+			db.First(&akun, user)
+
+			status := ctx.PostForm("status")
+
+			if status != "edit" && status != "buat" {
+				ctx.Redirect(http.StatusFound, "/")
+				return
+			}
+
+			karakter := utils.Karakter{}
+			if status == "edit" {
+				db.Where("id = ?", ctx.PostForm("idkarakter")).First(&karakter)
+
+				if karakter.AkunID != akun.ID {
+					ctx.Redirect(http.StatusFound, fmt.Sprintf("/editkarakter/%d", karakter.ID))
+					return
+				}
+			}
+
+			newKarakter := utils.Karakter{
+				Nama:         ctx.PostForm("nama"),
+				NamaLain:     ctx.PostForm("namalain"),
+				Personalitas: ctx.PostForm("personalitas"),
+				Kategori:     ctx.PostForm("kategori"),
+				Chat:         ctx.PostForm("chat"),
+				AkunID:       akun.ID,
+				Akun:         akun,
+			}
+
+			if status == "edit" {
+				newKarakter.ID = karakter.ID
+				newKarakter.Gambar = karakter.Gambar
+			}
+
+			file, err := ctx.FormFile("foto")
+
+			if err == nil {
+				PathFile := "assets/gambar/" + strconv.Itoa(int(akun.ID)) + ".png"
+				// PathFile := "assets/gambar/" + akun.ID.String() + ".png"
+				ctx.SaveUploadedFile(file, PathFile)
+
+				hasil := utils.UploadGambar(strconv.Itoa(int(akun.ID)))
+				// hasil := utils.UploadGambar(akun.ID.String())
+				newKarakter.Gambar = hasil.URL
+
+				defer os.Remove(PathFile)
+			}
+
+			if status == "buat" {
+				db.Create(&newKarakter)
+			} else {
+				db.Save(&newKarakter)
+			}
+
+			ctx.Redirect(http.StatusFound, fmt.Sprintf("/editkarakter/%d", newKarakter.ID))
+		})
+
 		HistoryChat := []*genai.Content{}
 		redirectLoginAutentikasi.GET("/chat/:idchat", func(c *gin.Context) {
-			cs := utils.BuatChat(client, HistoryChat)
+			db := database.GetDatabase()
+			session := sessions.Default(c)
+
+			akun := utils.DapatinAkun(db, session, &[]string{"Personalitas"})
+
+			var karakter utils.Karakter
+			db.Where("ID = ?", c.Param("idchat")).First(&karakter)
+
+			var personalitas []utils.Personalitas
+			db.Find(&personalitas, utils.Personalitas{AkunID: akun.ID})
+
+			if karakter.ID == 0 {
+				c.HTML(http.StatusNotFound, "error.html", gin.H{
+					"title": "Error",
+					"akun":  akun,
+					"kode":  404,
+					"isi":   "Character not found",
+				})
+
+				return
+			}
+
+			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), HistoryChat)
 
 			if len(HistoryChat) <= 0 {
 				HistoryChat = utils.DapatinSemuaPesan(cs)
 			}
 
 			c.HTML(http.StatusOK, "chat.html", gin.H{
-				"title":       "Chat",
-				"idChat":      c.Param("idchat"),
-				"isi":         HistoryChat,
-				"PanjangChat": len(HistoryChat) - 1,
+				"title":        fmt.Sprintf("Chat with %s", karakter.Nama),
+				"isi":          HistoryChat,
+				"PanjangChat":  len(HistoryChat) - 1,
+				"karakter":     karakter,
+				"personalitas": personalitas,
+				"akun":         akun,
 			})
 		})
 
-		redirectLoginAutentikasi.POST("/chat", func(c *gin.Context) {
-			cs := utils.BuatChat(client, HistoryChat)
+		redirectLoginAutentikasi.POST("/chat/:idchat", func(c *gin.Context) {
+			db := database.GetDatabase()
+
+			session := sessions.Default(c)
+			akun := utils.DapatinAkun(db, session, &[]string{"Personalitas"})
+
+			var karakter utils.Karakter
+			db.Where("ID = ?", c.Param("idchat")).First(&karakter)
+
+			if karakter.ID == 0 {
+				c.IndentedJSON(http.StatusNotFound, gin.H{
+					"chat": nil,
+				})
+
+				return
+			}
+
+			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), HistoryChat)
 
 			var newChat CHAT
 
@@ -189,8 +351,24 @@ func main() {
 			})
 		})
 
-		redirectLoginAutentikasi.POST("/chat/ulangipesan", func(ctx *gin.Context) {
-			cs := utils.BuatChat(client, HistoryChat)
+		redirectLoginAutentikasi.POST("/chat/:idchat/ulangipesan", func(ctx *gin.Context) {
+			db := database.GetDatabase()
+
+			session := sessions.Default(ctx)
+			akun := utils.DapatinAkun(db, session, &[]string{"Personalitas"})
+
+			var karakter utils.Karakter
+			db.Where("ID = ?", ctx.Param("idchat")).First(&karakter)
+
+			if karakter.ID == 0 {
+				ctx.IndentedJSON(http.StatusNotFound, gin.H{
+					"chat": nil,
+				})
+
+				return
+			}
+
+			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), HistoryChat)
 
 			resp, _ := utils.UlangiJawaban(cs)
 			if resp == nil {
@@ -212,8 +390,24 @@ func main() {
 			})
 		})
 
-		redirectLoginAutentikasi.POST("/chat/sarankalimat", func(ctx *gin.Context) {
-			cs := utils.BuatChat(client, HistoryChat)
+		redirectLoginAutentikasi.POST("/chat/:idchat/sarankalimat", func(ctx *gin.Context) {
+			db := database.GetDatabase()
+
+			session := sessions.Default(ctx)
+			akun := utils.DapatinAkun(db, session, &[]string{"Personalitas"})
+
+			var karakter utils.Karakter
+			db.Where("ID = ?", ctx.Param("idchat")).First(&karakter)
+
+			if karakter.ID == 0 {
+				ctx.IndentedJSON(http.StatusNotFound, gin.H{
+					"chat": nil,
+				})
+
+				return
+			}
+
+			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), HistoryChat)
 
 			resp := utils.SaranKalimat(client, cs)
 			if resp == nil {
@@ -226,6 +420,87 @@ func main() {
 
 			ctx.IndentedJSON(http.StatusCreated, gin.H{
 				"chat": resp.Candidates[0].Content.Parts[0],
+			})
+		})
+
+		redirectLoginAutentikasi.POST("/personalitas", func(ctx *gin.Context) {
+			var newPersonalitas StatusPeronsalitas
+
+			if err := ctx.ShouldBindJSON(&newPersonalitas); err != nil {
+				fmt.Println(err)
+				ctx.IndentedJSON(http.StatusCreated, gin.H{
+					"status": "Error",
+				})
+				return
+			}
+
+			if newPersonalitas.Status != "buat" && newPersonalitas.Status != "edit" && newPersonalitas.Status != "pilih" {
+				ctx.IndentedJSON(http.StatusCreated, gin.H{
+					"status": "Error",
+				})
+				return
+			}
+
+			db := database.GetDatabase()
+			session := sessions.Default(ctx)
+
+			akun := utils.DapatinAkun(db, session, &[]string{"Personalitas"})
+
+			if newPersonalitas.Status == "pilih" {
+				checkPersonalitas := utils.Personalitas{}
+				db.Where("id = ?", newPersonalitas.ID).First(&checkPersonalitas)
+
+				if checkPersonalitas.ID == 0 {
+					ctx.IndentedJSON(http.StatusCreated, gin.H{
+						"status": "Error",
+					})
+					return
+				}
+
+				// fmt.Println("PERSONALITAS BARU: " + newPersonalitas.ID)
+				// fmt.Println("CHECKPERSONALITAS: " + strconv.Itoa(int(checkPersonalitas.ID)))
+				// fmt.Println("SEBELUM AKUN PERSONALITAS: " + strconv.Itoa(int(akun.PersonalitasID)))
+
+				// akun.Personalitas.ID = checkPersonalitas.ID
+				// db.Session(&gorm.Session{FullSaveAssociations: true}).Update(&akun)
+				// db.Model(&akun).Association("Personalitas").Clear()
+				db.Model(&akun).Update("Personalitas", utils.Personalitas{ID: checkPersonalitas.ID})
+				// db.Model(&akun).Update("PersonalitasID", checkPersonalitas.ID)
+				// db.Save(&akun)
+
+				// fmt.Println("AKUN PERSONALITAS: " + strconv.Itoa(int(akun.PersonalitasID)))
+
+				ctx.IndentedJSON(http.StatusCreated, gin.H{
+					"status": "Success",
+				})
+
+				return
+			}
+
+			if newPersonalitas.Nama == "" || newPersonalitas.Personalitas == "" {
+				ctx.IndentedJSON(http.StatusCreated, gin.H{
+					"status": "Error",
+				})
+				return
+			}
+
+			personalitas := utils.Personalitas{
+				Nama:         newPersonalitas.Nama,
+				Personalitas: newPersonalitas.Personalitas,
+				AkunID:       akun.ID,
+			}
+
+			if newPersonalitas.Status == "buat" {
+				db.Create(&personalitas)
+			} else if newPersonalitas.Status == "edit" {
+				db.Save(&personalitas)
+			}
+
+			ctx.IndentedJSON(http.StatusCreated, gin.H{
+				"status":       "Berhasil",
+				"nama":         personalitas.Nama,
+				"personalitas": personalitas.Personalitas,
+				"id":           personalitas.ID,
 			})
 		})
 	}
@@ -262,10 +537,14 @@ func main() {
 			}
 
 			db := database.GetDatabase()
-			akun := database.Akun{}
+			akun := utils.Akun{}
 
 			db.First(&akun, "email = ? OR username = ?", nama_akun, nama_akun)
 
+			fmt.Println("AKUN LOGIN, USERNAME: " + akun.Username)
+			fmt.Println(akun.ID)
+
+			// akun.ID == 0 ||
 			if akun.ID == 0 || !utils.CheckPasswordHash(password, akun.Password) {
 				session.AddFlash("Email or password is incorrect", "Error")
 				session.Save()
@@ -280,7 +559,7 @@ func main() {
 			// }
 
 			// Save the username in the session
-			session.Set("user", akun.ID) // In real world usage you'd set this to the users ID
+			session.Set("user", akun.ID)
 			session.Save()
 
 			ctx.Redirect(http.StatusFound, "/")
@@ -299,8 +578,10 @@ func main() {
 
 			db := database.GetDatabase()
 
-			akunDiMasuin := database.Akun{}
+			akunDiMasuin := utils.Akun{}
 			db.First(&akunDiMasuin, "email = ? OR username = ?", email, username)
+
+			fmt.Println("REGISTER AKUN: " + akunDiMasuin.Username)
 
 			if akunDiMasuin.Email != "" || akunDiMasuin.Username != "" {
 				if akunDiMasuin.Email != "" {
@@ -320,12 +601,14 @@ func main() {
 				return
 			}
 
-			registerAkun := database.Akun{Username: username, Email: email, Password: hashPassword, ImageURL: "/assets/no-users.png"}
+			registerAkun := utils.Akun{Username: username, Email: email, Password: hashPassword, ImageURL: "/assets/no-users.png"}
 
 			db.Create(&registerAkun)
+			fmt.Println("AAAAAH")
 
 			session.Set("user", registerAkun.ID)
 			if err := session.Save(); err != nil {
+				fmt.Println(err)
 				ctx.Redirect(http.StatusFound, "/register")
 				return
 			}

@@ -38,6 +38,40 @@
             border-color: rgb(167, 167, 167);
         }
 
+        .tombol-ujung { 
+            font-size: 20px;
+            height: 45px;
+            width: 45px;
+            color: white;
+            background-color: #1d1d1d;
+            border: 1px solid rgb(81, 81, 81);
+            border-radius: 5px;
+        }
+
+        .dropdown-item:focus {
+            background-color: transparent !important;
+        }
+
+        .dropdown-item:hover {
+            background-color: #191919 !important;
+        }
+
+        .form-control, .form-select {
+            color: white !important;
+            background-color: #2d2d2d;
+            border-color: rgb(80, 80, 80);
+        }
+
+        .form-control:focus {
+            box-shadow: none !important;
+            background-color: #2d2d2d;
+            border-color: rgb(97, 97, 97);
+        } 
+
+        .form-control::placeholder {
+            color: grey;
+        }
+
         #tempat_chat::-webkit-scrollbar {
             display: none;
         }
@@ -75,11 +109,40 @@
 <body style="background-color: #1d1d1d; overflow-x: hidden;">
     <div class="align-items-center p-2 mb-2" style="height: 70px; background-color: #212121;">
         <div class="d-flex align-items-center ms-2">
-            <img src="/assets/muak.jpg" alt="" width="50" height="50" class="me-2 rounded-1" />
-            <div class="row">
-                <span class="text-white" style="font-weight: 600; font-size: larger;">Mas Rudi</span>
-                <span class="text-white-50">Tukang Cukur</span>
+            <img src="{{ .karakter.Gambar }}" alt="" width="50" height="50" class="me-2 rounded-1" />
+            <div class="flex-grow-1 row">
+                <span class="text-white" style="font-weight: 600; font-size: larger;">{{ .karakter.Nama }}</span>
+                <span class="text-white-50">{{ .karakter.NamaLain }} </span>
             </div>
+            <div class="dropdown">
+                <button class="tombol-ujung" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-gear-fill"></i>
+                </button>
+                <ul class="dropdown-menu" style="background-color: #2d2d2d;">
+                    <li><a class="dropdown-item text-white" href="#">Clear Chat</a></li>
+                    <li><a class="dropdown-item" style="color: red;" href="#">Delete Chat</a></li>
+                    <li><hr class="dropdown-divider" style="background-color: white;"></li>
+                    <li><a class="dropdown-item text-white" href="#" data-bs-toggle="modal" data-bs-target="#Personalitas">Create Personality</a></li>
+                    <li><span class="text-white" style="padding: .25rem 1rem; width: 100%" id="nama-personalitas">Personality: {{ .akun.Personalitas.Nama }}</span></li>
+                    {{ if eq .karakter.AkunID .akun.ID }}
+                    <li><hr class="dropdown-divider" style="background-color: white;"></li>
+                    <li>
+                        <a href="/editkarakter/{{ .karakter.ID }}" class="dropdown-item text-white">
+                            Edit Character
+                        </a>
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item" style="color: red;" data-bs-toggle="modal" data-bs-target="#HapusKarakter">
+                            Delete Character
+                        </button>
+                    </li>
+                    {{ end }}
+                </ul>
+            </div>
+            <!--<button class="tombol-ujung" data-bs-toggle="popover">
+                <i class="bi bi-gear-fill"></i>
+            </button>
+            -->
         </div>
     </div>
     <div>
@@ -115,6 +178,97 @@
     <div class="end-0" id="sarankalimatdiv" style="position: fixed; height: auto; bottom: 125px; max-height: 150px; max-width: 150px; display: none">
         <button class="text-white" id="text-sarankalimat" style="height: 100px; background: none; border: none;">TEST</button>
     </div>
+    <div class="modal fade" id="HapusKarakter" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered text-white">
+            <div class="modal-content" style="background-color: #191919;">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Character</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete YOUR OWN character creation?</p>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Nevermind</button>
+                    <button type="button" class="btn btn-danger">Yes, Delete!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="BuatPersonalitas" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered text-white">
+            <div class="modal-content" style="background-color: #191919;">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Personality</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <input type="text" class="form-control" name="nama" maxlength="40" placeholder="John" required />
+                    </div>
+                    <div class="mb-3">
+                        <label>Personality</label>
+                        <textarea class="form-control" name="personalitas" style="resize: none;" maxlength="150" rows="3" placeholder="John is a 18 years old highschool student who likes to play badminton" required></textarea>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="alert" style="padding: 10px 10px; display: none;" id="StatusBuatPersonalitas">Success: Personality created</div>
+                        <div class="spinner-border text-light" id="loading-BuatPersonalitas" style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+
+                    <br>
+
+                    <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#Personalitas">Back</button>
+                    <button type="button" class="btn btn-success" onclick="BuatPersonalitas()">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="Personalitas" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered text-white">
+            <div class="modal-content" style="background-color: #191919;">
+                <div class="modal-header">
+                    <h5 class="modal-title">Personality</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {{ if not .personalitas }}
+                    <div>No Personality</div>
+                    {{ else }}
+                    <div>List Personalities</div>
+                    {{ end }}
+                    <ul class="list-group list-group-flush" id="list-personalitas">
+                        {{ $IDPersonalitas := .akun.Personalitas.ID }}
+                        {{ range $element := .personalitas }}
+                        <li class="list-group-item text-white" style="background-color: transparent;">
+                            <div class="d-flex">
+                                <div class="flex-grow-1 pt-1" id="nama-personalitas-{{$element.ID}}">Name: {{ $element.Nama }}</div>
+                                {{ if eq $IDPersonalitas $element.ID }}
+                                <button class="btn btn-primary tombol-personalitas" id="personalitas-{{ $element.ID }}" onclick="PilihPersonalitas('{{$element.ID}}')">Selected</button>
+                                {{ else }}
+                                <button class="btn btn-primary tombol-personalitas" id="personalitas-{{ $element.ID }}" onclick="PilihPersonalitas('{{$element.ID}}')">Select</button>
+                                {{ end }}
+                            </div>
+                            <span class="mb-1">Personality: {{ $element.Personalitas }}</span>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    <div class="text-center">
+                        <div class="alert" style="padding: 10px 10px; display: none;" id="StatusPilihPersonalitas">Success: Personality selected</div>
+                        <div class="spinner-border text-light" id="loading-PilihPersonalitas" style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#BuatPersonalitas">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!--
     <div class="position-fixed h-auto w-100 bottom-0" style="background-color: #212121;">
         <div class="d-flex">
@@ -149,9 +303,9 @@
             $("#text-sarankalimat").parent().css("display", "none");
 
             $.ajax({
-                url: "/chat",
+                url: "/chat/{{.karakter.ID}}",
                 type: "POST",
-                data: JSON.stringify({ "id": "{{ .idChat }}", "chat": pesan }),
+                data: JSON.stringify({ "id": "{{ .karakter.ID }}", "chat": pesan }),
                 contentType: "application/json"
             }).done(v => {
                 if(v.chat === undefined) {
@@ -176,7 +330,7 @@
             IsiOmongan[IsiOmongan.length - 1].remove();
 
             $.ajax({
-                url: "/chat/ulangipesan",
+                url: "/chat/{{.karakter.ID}}/ulangipesan",
                 type: "POST",
                 data: "",
                 contentType: "application/json"
@@ -203,7 +357,7 @@
             $("#loader-sarankalimat").css("display", "block");
 
             $.ajax({
-                url: "/chat/sarankalimat",
+                url: "/chat/{{.karakter.ID}}/sarankalimat",
                 type: "POST",
                 data: "",
                 contentType: "application/json"
@@ -222,6 +376,77 @@
             });
         }
 
+        function BuatPersonalitas() {            
+            const personalitasNama = $('[name="nama"]').val();
+            const personalitasPersonalitas = $('[name="personalitas"]').val();
+
+            console.log(personalitasNama, personalitasPersonalitas);
+
+            if(personalitasNama === "" || personalitasPersonalitas === "") {
+                return;
+            }
+            
+            $("#loading-BuatPersonalitas").css('display', 'inline-block');
+            $("#StatusBuatPersonalitas").css("display", "none");
+
+            $.ajax({
+                url: "/personalitas",
+                type: "POST",
+                data: JSON.stringify({ "status": "buat", "nama": personalitasNama, "personalitas": personalitasPersonalitas }),
+                contentType: "application/json"
+            }).then(v => {
+                $("#loading-BuatPersonalitas").css('display', 'none');
+                $("#StatusBuatPersonalitas").css("display", "block");
+
+                if(v.status === "Error") {
+                    $("#StatusBuatPersonalitas").text("Error");
+                    $("#StatusBuatPersonalitas").addClass("alert-danger");
+                    return;
+                } 
+
+                $("#list-personalitas").append(`
+                    <li class="list-group-item text-white" style="background-color: transparent;">
+                        <div class="d-flex">
+                            <div class="flex-grow-1 pt-1">Name: ${v.nama}</div>
+                            <button class="btn btn-primary tombol-personalitas" id="personalitas-${v.id}" onclick="PilihPersonalitas('${v.id}')">Select</button>
+                        </div>
+                        <span class="mb-1">Personality: ${v.personalitas}</span>
+                    </li>
+                    `)
+
+                $("#StatusBuatPersonalitas").addClass("alert-success");
+            });
+        }
+
+        function PilihPersonalitas(id) {
+            $("#loading-PilihPersonalitas").css('display', 'inline-block');
+            $("#StatusPilihPersonalitas").css("display", "none");
+
+            $.ajax({
+                url: "/personalitas",
+                type: "POST",
+                data: JSON.stringify({ "status": "pilih", "id": id }),
+                contentType: "application/json"
+            }).then(v => {
+                $("#loading-PilihPersonalitas").css('display', 'none');
+                $("#StatusPilihPersonalitas").css("display", "block");
+                
+                if(v.status === "Error") {
+                    $("#StatusPilihPersonalitas").text("Error");
+                    $("#StatusPilihPersonalitas").addClass("alert-danger");
+                    return;
+                } 
+
+                $('.tombol-personalitas').each((_, v) => {
+                    v.textContent = "Select";
+                });
+
+                $(`#nama-personalitas`).text("Personality: " + $(`#nama-personalitas-${id}`).text().replace("Name: ", ""));
+                $(`#personalitas-${id}`).text("Selected");
+                $("#StatusPilihPersonalitas").addClass("alert-success");
+            })
+        }
+
         $(".text-awal").each((v, e) => {
             const elemn = $(e);
             elemn.html(RenderText(elemn.text()))
@@ -231,6 +456,12 @@
             $("#pesan").val(SaranKalimatText);
             $("#text-sarankalimat").parent().css("display", "none");
         })
+
+        const IDPersonalitas = "{{.akun.Personalitas.ID}}";
+
+        if(IDPersonalitas == "") {
+            $("#Personalitas").modal("show");
+        }
     </script>
 </body>
 </html>
