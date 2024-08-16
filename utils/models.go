@@ -13,7 +13,7 @@ type Akun struct {
 	PembuatanKarakter []Karakter     `gorm:"constraint:OnUpdate:CASCADE;foreignkey:AkunID"`
 	ChatKarakter      []KarakterChat `gorm:"constraint:OnUpdate:CASCADE;foreignkey:PechatID"`
 	ListPersonalitas  []Personalitas `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignkey:AkunID"`
-	PersonalitasID    uint64         `gorm:"index"`
+	PersonalitasID    *uint64        `gorm:"index"`
 	Personalitas      Personalitas   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:PersonalitasID"`
 	CreatedAt         time.Time
 }
@@ -41,15 +41,17 @@ type Karakter struct {
 
 type KarakterChat struct {
 	ID         uint64    `gorm:"primaryKey"`
-	History    []IsiChat `gorm:"constraint:OnUpdate:CASCADE;foreignkey:ID"`
-	KarakterID int       `gorm:"index"`
+	History    []IsiChat `gorm:"constraint:OnUpdate:CASCADE;foreignkey:RoomChatID"`
+	KarakterID uint64    `gorm:"index"`
 	PechatID   uint64    `gorm:"index"`
 }
 
 type IsiChat struct {
-	ID             uint64 `gorm:"primaryKey"`
-	Chat           string `json:"chat" gorm:"size:150;not null"`
-	Role           string `json:"role" gorm:"size:5;not null"`
-	CreatedAt      time.Time
-	DariKarakterID uint64
+	ID          uint64 `gorm:"primaryKey"`
+	Chat        string `json:"chat" gorm:"size:1000;not null"`
+	Role        string `json:"role" gorm:"size:5;not null"`
+	Posisi      uint8  `gorm:"defualt:1"`
+	CreatedAt   time.Time
+	RoomChatID  uint64
+	DariPecatID uint64
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
-	"github.com/google/generative-ai-go/genai"
 	// "github.com/google/uuid"
 )
 
@@ -254,7 +253,7 @@ func main() {
 			ctx.Redirect(http.StatusFound, fmt.Sprintf("/editkarakter/%d", newKarakter.ID))
 		})
 
-		HistoryChat := []*genai.Content{}
+		// HistoryChat := []*genai.Content{}
 		redirectLoginAutentikasi.GET("/chat/:idchat", func(c *gin.Context) {
 			db := database.GetDatabase()
 			session := sessions.Default(c)
@@ -267,6 +266,14 @@ func main() {
 			var personalitas []utils.Personalitas
 			db.Find(&personalitas, utils.Personalitas{AkunID: akun.ID})
 
+			karakterChat := utils.KarakterChat{KarakterID: karakter.ID, PechatID: akun.ID}
+			db.Preload("History").First(&karakterChat)
+
+			// var semua_isiChat []utils.IsiChat
+			// db.Where("room_chat_id = ?", karakterChat.ID).Find(&semua_isiChat)
+
+			karakterHistoryChat := utils.DapatinHistoryKarakter(karakterChat)
+
 			if karakter.ID == 0 {
 				c.HTML(http.StatusNotFound, "error.html", gin.H{
 					"title": "Error",
@@ -278,16 +285,16 @@ func main() {
 				return
 			}
 
-			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), HistoryChat)
+			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), karakterHistoryChat)
 
-			if len(HistoryChat) <= 0 {
-				HistoryChat = utils.DapatinSemuaPesan(cs)
+			if len(karakterHistoryChat) <= 0 {
+				karakterHistoryChat = utils.DapatinSemuaPesan(cs)
 			}
 
 			c.HTML(http.StatusOK, "chat.html", gin.H{
 				"title":        fmt.Sprintf("Chat with %s", karakter.Nama),
-				"isi":          HistoryChat,
-				"PanjangChat":  len(HistoryChat) - 1,
+				"isi":          karakterHistoryChat,
+				"PanjangChat":  len(karakterHistoryChat) - 1,
 				"karakter":     karakter,
 				"personalitas": personalitas,
 				"akun":         akun,
@@ -311,7 +318,25 @@ func main() {
 				return
 			}
 
-			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), HistoryChat)
+			karakterChat := utils.KarakterChat{KarakterID: karakter.ID, PechatID: akun.ID}
+			db.Preload("History").First(&karakterChat)
+
+			indexIsiChat := 0
+
+			if karakterChat.ID == 0 {
+				// karakterChat.History = []utils.IsiChat{newIsiChat}
+				db.Create(&karakterChat)
+
+				newIsiChat := utils.IsiChat{Chat: karakter.RenderChat(akun.Personalitas.DefaultPersonalitas(akun.Username).Nama), Role: "model", RoomChatID: karakterChat.ID, DariPecatID: akun.ID, Posisi: 1}
+				db.Create(&newIsiChat)
+
+				indexIsiChat++
+			}
+
+			karakterHistoryChat := utils.DapatinHistoryKarakter(karakterChat)
+			indexIsiChat += len(karakterHistoryChat)
+
+			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), karakterHistoryChat)
 
 			var newChat CHAT
 
@@ -330,21 +355,26 @@ func main() {
 				return
 			}
 
+			db.Model(&karakterChat).Association("History").Append([]utils.IsiChat{
+				{Chat: newChat.Chat, Role: "user", RoomChatID: karakterChat.ID, DariPecatID: akun.ID, Posisi: uint8(indexIsiChat + 1)},
+				{Chat: fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0]), Role: "model", RoomChatID: karakterChat.ID, DariPecatID: akun.ID, Posisi: uint8(indexIsiChat + 2)},
+			})
+
 			// HistoryChat = utils.DapatinSemuaPesan(cs)
-			HistoryChat = append(HistoryChat, []*genai.Content{
-				{
-					Parts: []genai.Part{
-						genai.Text(newChat.Chat),
-					},
-					Role: "user",
-				},
-				{
-					Parts: []genai.Part{
-						resp.Candidates[0].Content.Parts[0],
-					},
-					Role: "model",
-				},
-			}...)
+			// HistoryChat = append(HistoryChat, []*genai.Content{
+			// 	{
+			// 		Parts: []genai.Part{
+			// 			genai.Text(newChat.Chat),
+			// 		},
+			// 		Role: "user",
+			// 	},
+			// 	{
+			// 		Parts: []genai.Part{
+			// 			resp.Candidates[0].Content.Parts[0],
+			// 		},
+			// 		Role: "model",
+			// 	},
+			// }...)
 
 			c.IndentedJSON(http.StatusCreated, gin.H{
 				"chat": resp.Candidates[0].Content.Parts[0],
@@ -360,6 +390,11 @@ func main() {
 			var karakter utils.Karakter
 			db.Where("ID = ?", ctx.Param("idchat")).First(&karakter)
 
+			karakterChat := utils.KarakterChat{KarakterID: karakter.ID, PechatID: akun.ID}
+			db.Preload("History").First(&karakterChat)
+
+			karakterHistoryChat := utils.DapatinHistoryKarakter(karakterChat)
+
 			if karakter.ID == 0 {
 				ctx.IndentedJSON(http.StatusNotFound, gin.H{
 					"chat": nil,
@@ -368,7 +403,7 @@ func main() {
 				return
 			}
 
-			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), HistoryChat)
+			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), karakterHistoryChat)
 
 			resp, _ := utils.UlangiJawaban(cs)
 			if resp == nil {
@@ -377,6 +412,9 @@ func main() {
 				})
 				return
 			}
+
+			isiCharDiPilih := karakterChat.History[len(karakterChat.History)-1]
+			db.Model(&isiCharDiPilih).Update("chat", fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0]))
 
 			// HistoryChat = append(HistoryChat, &genai.Content{
 			// 	Parts: []genai.Part{
@@ -399,6 +437,11 @@ func main() {
 			var karakter utils.Karakter
 			db.Where("ID = ?", ctx.Param("idchat")).First(&karakter)
 
+			karakterChat := utils.KarakterChat{KarakterID: karakter.ID, PechatID: akun.ID}
+			db.Preload("History").First(&karakterChat)
+
+			karakterHistoryChat := utils.DapatinHistoryKarakter(karakterChat)
+
 			if karakter.ID == 0 {
 				ctx.IndentedJSON(http.StatusNotFound, gin.H{
 					"chat": nil,
@@ -407,9 +450,9 @@ func main() {
 				return
 			}
 
-			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), HistoryChat)
+			cs := utils.BuatChat(client, karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), karakterHistoryChat)
 
-			resp := utils.SaranKalimat(client, cs)
+			resp := utils.SaranKalimat(client, akun.Personalitas.DefaultPersonalitas(akun.Username), cs)
 			if resp == nil {
 				ctx.IndentedJSON(http.StatusCreated, gin.H{
 					"chat": nil,
@@ -490,9 +533,24 @@ func main() {
 				AkunID:       akun.ID,
 			}
 
+			fmt.Println("STATUS: " + newPersonalitas.Status)
+			fmt.Println("ID!!!: " + newPersonalitas.ID)
+
 			if newPersonalitas.Status == "buat" {
 				db.Create(&personalitas)
 			} else if newPersonalitas.Status == "edit" {
+				checkPersonalitas := utils.Personalitas{}
+				db.Where("id = ?", newPersonalitas.ID).First(&checkPersonalitas)
+
+				if checkPersonalitas.ID == 0 {
+					ctx.IndentedJSON(http.StatusCreated, gin.H{
+						"status": "Error",
+					})
+					return
+				}
+
+				personalitas.ID = checkPersonalitas.ID
+
 				db.Save(&personalitas)
 			}
 
@@ -500,7 +558,7 @@ func main() {
 				"status":       "Berhasil",
 				"nama":         personalitas.Nama,
 				"personalitas": personalitas.Personalitas,
-				"id":           personalitas.ID,
+				"id":           strconv.Itoa(int(personalitas.ID)),
 			})
 		})
 	}

@@ -24,7 +24,8 @@ func Connect() {
 	config.SetMaxOpenConns(100)
 	config.SetConnMaxLifetime(time.Hour)
 
-	// db.Migrator().CreateTable(&utils.Karakter{})
+	// db.Migrator().CreateTable(&utils.IsiChat{})
+	// db.Migrator().RenameColumn(&utils.IsiChat{}, "dari_karakter_id", "room_chat_id")
 	database.AutoMigrate(&utils.Akun{}, &utils.Personalitas{}, &utils.Karakter{}, &utils.KarakterChat{}, &utils.IsiChat{})
 
 	fmt.Println("Migrations Finished")

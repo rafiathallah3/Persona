@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strings"
 
@@ -52,7 +51,7 @@ func BuatModel(client *genai.Client, SystemInstruction *genai.Content) *genai.Ge
 func BuatChat(client *genai.Client, karakter Karakter, personalitas Personalitas, history []*genai.Content) *genai.ChatSession {
 	model := BuatModel(client, &genai.Content{
 		Parts: []genai.Part{
-			genai.Text(fmt.Sprintf("Your name is %s, ", karakter.Nama) + strings.ReplaceAll(strings.ReplaceAll(karakter.Personalitas, "{{char}}", karakter.Nama), "{{user}}", personalitas.Nama)),
+			genai.Text(karakter.RenderPersonalitas(personalitas.Nama)),
 			// genai.Text("Your name is Rudi, You are a man and a barber who runs a barbershop, suddenly a customer named John comes to your shop getting a haircut"),
 			// genai.Text("Your name is Sarah, You like playing games and studying and currently you have a boyfriend named John. You are now in his house"),
 		},
@@ -93,10 +92,11 @@ func UlangiJawaban(cs *genai.ChatSession) (*genai.GenerateContentResponse, error
 	return cs.SendMessage(ctx, Omongan.Parts[0])
 }
 
-func SaranKalimat(client *genai.Client, cs *genai.ChatSession) *genai.GenerateContentResponse {
+func SaranKalimat(client *genai.Client, personalitas Personalitas, cs *genai.ChatSession) *genai.GenerateContentResponse {
 	modelSaran := BuatModel(client, &genai.Content{
 		Parts: []genai.Part{
-			genai.Text("You are John who went to the Rudi's Barbershop to get a haircut"),
+			genai.Text(personalitas.RenderPersonalitas(personalitas.Nama)),
+			// genai.Text("You are John who went to the Rudi's Barbershop to get a haircut"),
 		},
 		Role: "user",
 	})

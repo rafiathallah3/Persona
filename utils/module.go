@@ -2,9 +2,13 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"sort"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
+	"github.com/google/generative-ai-go/genai"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
@@ -56,6 +60,46 @@ func (personalitas Personalitas) DefaultPersonalitas(NamaDefault string) Persona
 	}
 
 	return personalitas
+}
+
+func (personalitas Personalitas) RenderPersonalitas(username string) string {
+	return fmt.Sprintf("Your name is %s, ", personalitas.Nama) + strings.ReplaceAll(strings.ReplaceAll(personalitas.Personalitas, "{{char}}", personalitas.Nama), "{{user}}", username)
+}
+
+func (karakter Karakter) RenderPersonalitas(username string) string {
+	return fmt.Sprintf("Your name is %s, ", karakter.Nama) + strings.ReplaceAll(strings.ReplaceAll(karakter.Personalitas, "{{char}}", karakter.Nama), "{{user}}", username)
+}
+
+func (karakter Karakter) RenderChat(username string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(karakter.Chat, "{{char}}", karakter.Nama), "{{user}}", username)
+}
+
+// Why not use this function to update the position? Because if the records are created at the same time. The length of the table would just return the same value
+// func (isiChat *IsiChat) AfterCreate(tx *gorm.DB) (err error) {
+// 	var listChatRoom []IsiChat
+
+// 	tx.Model(IsiChat{ID: isiChat.ID}).Find(&listChatRoom)
+
+// 	tx.Statement.Update("posisi", len(listChatRoom)+1)
+
+// 	return
+// }
+
+func DapatinHistoryKarakter(karakterChat KarakterChat) []*genai.Content {
+	karakterHistoryChat := []*genai.Content{}
+
+	sort.Slice(karakterChat.History, func(i, j int) bool {
+		return karakterChat.History[i].Posisi < karakterChat.History[j].Posisi
+	})
+
+	for _, v := range karakterChat.History {
+		karakterHistoryChat = append(karakterHistoryChat, &genai.Content{
+			Role:  v.Role,
+			Parts: []genai.Part{genai.Text(v.Chat)},
+		})
+	}
+
+	return karakterHistoryChat
 }
 
 func DapatinEnvVariable(key string) string {
