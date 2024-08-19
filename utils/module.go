@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/google/generative-ai-go/genai"
@@ -14,6 +15,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+type DataHistoryChat struct {
+	ID    uint64
+	Chat  string
+	Role  string
+	Waktu time.Time
+}
 
 func Map[T, U any](ts []T, f func(T) U) []U {
 	us := make([]U, len(ts))
@@ -85,21 +93,29 @@ func (karakter Karakter) RenderChat(username string) string {
 // 	return
 // }
 
-func DapatinHistoryKarakter(karakterChat KarakterChat) []*genai.Content {
-	karakterHistoryChat := []*genai.Content{}
+func DapatinHistoryKarakter(karakterChat KarakterChat) ([]*genai.Content, []DataHistoryChat) {
+	genAIHistoryChat := []*genai.Content{}
+	dataHistoryChat := []DataHistoryChat{}
 
 	sort.Slice(karakterChat.History, func(i, j int) bool {
 		return karakterChat.History[i].Posisi < karakterChat.History[j].Posisi
 	})
 
 	for _, v := range karakterChat.History {
-		karakterHistoryChat = append(karakterHistoryChat, &genai.Content{
+		genAIHistoryChat = append(genAIHistoryChat, &genai.Content{
 			Role:  v.Role,
 			Parts: []genai.Part{genai.Text(v.Chat)},
 		})
+
+		dataHistoryChat = append(dataHistoryChat, DataHistoryChat{
+			ID:    v.ID,
+			Chat:  v.Chat,
+			Role:  v.Role,
+			Waktu: v.CreatedAt,
+		})
 	}
 
-	return karakterHistoryChat
+	return genAIHistoryChat, dataHistoryChat
 }
 
 func DapatinEnvVariable(key string) string {

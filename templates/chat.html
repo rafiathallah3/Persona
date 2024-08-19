@@ -152,12 +152,33 @@
             {{ $panjangChat := .PanjangChat}}
             {{ range $index, $element := .isi }}
             <div class="d-flex mx-2 mb-2">
-                <div class="p-2 text-white text-awal {{ if eq $element.Role $user }}background-hijau{{ else }}background-abuabu{{ end }}">{{ index $element.Parts 0 }}</div>            
-                {{ if and (ne $index 0) (ne $element.Role $user) (eq $index $panjangChat) }}
-                <button class="mx-1 text-white ulangi-pesan" type="button" onclick="UlangiPesan()">
-                    <i class="bi bi-arrow-repeat h4"></i>
-                </button>
-                {{ end }}
+                <div class="d-flex w-100 text-white isi-text" id="isi-text-{{$element.ID}}">
+                    <div id="textchat-{{$element.ID}}" class="p-2 text-awal {{ if eq $element.Role $user }}background-hijau{{ else }}background-abuabu{{ end }}">{{ $element.Chat }}</div>            
+                    {{ if and (ne $index 0) (ne $element.Role $user) (eq $index $panjangChat) }}
+                    <div class="btn-group">
+                        <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
+                        </button>
+                        <ul class="dropdown-menu" style="background-color: #2d2d2d;">
+                            <li><button class="dropdown-item text-white" onclick="UlangiPesan()">Refresh Message</button></li>
+                            <li><button class="dropdown-item text-white" onclick="UpdatePesan('edit', '{{$element.ID}}')">Edit Message</button></li>
+                            <li><button class="dropdown-item" style="color: red;" onclick="HapusPesan()">Delete Message</button></li>
+                        </ul>
+                    </div>
+                    {{ end }}
+                </div>
+
+                <div class="d-none w-100 edit-text" id="edit-text-{{$element.ID}}">
+                    <textarea id="textarea-{{$element.ID}}" class="p-2 text-white text-awal" style="background-color: #545353; border: 1px solid rgb(133, 133, 133); outline: none; resize: none">{{ $element.Chat }}</textarea>
+                    <div class="d-flex flex-column">
+                        <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('konfirmasi', '{{$element.ID}}')">
+                            <i class="bi bi-check h4 p-1"></i>
+                        </button>
+                        <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('nvm', '{{$element.ID}}')">
+                            <i class="bi bi-x h4 p-1"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
             {{ end }}  
         </div>
@@ -284,7 +305,31 @@
             return text.replace(/\*(.*?)\*/g, "<b><i>$1</i></b>")
         }
 
+        function TambahinText(text) {
+            return `
+            <div class="d-flex mx-2 mb-2">
+                <div class="p-2 text-white text-awal background-abuabu">${RenderText(text)}</div>
+                <div class="btn-group">
+                    <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
+                    </button>
+                    <ul class="dropdown-menu" style="background-color: #2d2d2d;">
+                        <li><button class="dropdown-item text-white" onclick="UlangiPesan()">Refresh Message</button></li>
+                        <li><button class="dropdown-item text-white">Edit Message</button></li>
+                        <li><button class="dropdown-item" style="color: red;" href="#">Delete Message</button></li>
+                    </ul>
+                </div>
+            </div>
+            `
+        }
+
+        let CooldownKirimPesan = false;
         function KlikSend() {
+            if(CooldownKirimPesan) {
+                return;
+            }
+            CooldownKirimPesan = true;
+
             const pesan = $('#pesan').val();
 
             if(pesan === "") {
@@ -295,11 +340,18 @@
             <div class="d-flex mx-2 mb-2">
                 <div class="p-2 text-white text-awal background-hijau">${RenderText(pesan)}</div>
             </div>
-            `)
+            `);
             $('#pesan').val("");
             $("#sarankalimat").css("display", "block");
             $("#loader-sarankalimat").css("display", "none");
             $("#text-sarankalimat").parent().css("display", "none");
+            $("#tempat_chat").append(`
+            <div class="d-flex mx-2 mb-2">
+                <div class="p-3 background-abuabu" id="loading-chat">
+                    <div class="loader"></div>
+                </div> 
+            </div>
+            `)
 
             $.ajax({
                 url: "/chat/{{.karakter.ID}}",
@@ -311,20 +363,23 @@
                     return;
                 }
 
-                $("button.ulangi-pesan").remove();
+                $("button.ulangi-pesan").parent().remove();
+                $("#loading-chat").parent().remove();
 
-                $("#tempat_chat").append(`
-                <div class="d-flex mx-2 mb-2">
-                    <div class="p-2 text-white text-awal background-abuabu">${RenderText(v.chat)}</div>
-                    <button class="mx-1 text-white ulangi-pesan" style="background-color: transparent; background-repeat: no-repeat; border: none; font-weight: bolder;" type="button" onclick="UlangiPesan()">
-                        <i class="bi bi-arrow-repeat h4"></i>
-                    </button>
-                </div>
-                `)
+                $("#tempat_chat").append(TambahinText(v.chat))
+
+                CooldownKirimPesan = false;
             })
         }
 
+        let CooldownUlangiPesan = false;
         function UlangiPesan() {
+            if(CooldownUlangiPesan) {
+                return;
+            }
+
+            CooldownUlangiPesan = true;
+
             const IsiOmongan =$("#tempat_chat").children("div");
             IsiOmongan[IsiOmongan.length - 1].remove();
 
@@ -338,14 +393,34 @@
                     return;
                 }
 
-                $("#tempat_chat").append(`
-                <div class="d-flex mx-2 mb-2">
-                    <div class="p-2 text-white text-awal background-abuabu">${RenderText(v.chat)}</div>
-                    <button class="mx-1 text-white ulangi-pesan" style="background-color: transparent; background-repeat: no-repeat; border: none; font-weight: bolder;" type="button" onclick="UlangiPesan()">
-                        <i class="bi bi-arrow-repeat h4"></i>
-                    </button>
-                </div>
-                `)
+                $("#tempat_chat").append(TambahinText(v.chat))
+                CooldownUlangiPesan = false;
+            });
+        }
+
+        let CooldownHapus = false;
+        function HapusPesan() {
+            if(CooldownHapus) {
+                return;
+            }
+            CooldownHapus = true;
+
+            const IsiOmongan =$("#tempat_chat").children("div");
+
+            $.ajax({
+                url: "/chat/{{.karakter.ID}}/hapuspesan",
+                type: "POST",
+                data: "",
+                contentType: "application/json"
+            }).done(v => {
+                if(v.status !== "sukses" || IsiOmongan.length - 2 < 0) {
+                    return;
+                }
+
+                IsiOmongan[IsiOmongan.length - 1].remove();
+                IsiOmongan[IsiOmongan.length - 2].remove();
+
+                CooldownHapus = false;
             });
         }
 
@@ -372,6 +447,49 @@
                 $("#text-sarankalimat").text(v.chat);
                 $("#text-sarankalimat").parent().css("display", "block");
                 SaranKalimatText = v.chat;
+            });
+        }
+
+        function UpdatePesan(status, IdPesan) {            
+            if(status === "edit") {
+                const tinggi = $(`#edit-text-${IdPesan}`).parent().height();
+
+                $(`#isi-text-${IdPesan}`).addClass("d-none");
+                $(`#isi-text-${IdPesan}`).removeClass("d-flex");
+                $(`#edit-text-${IdPesan}`).addClass("d-flex");
+                $(`#edit-text-${IdPesan}`).removeClass("d-none");
+
+                $(`#textarea-${IdPesan}`).height(tinggi);
+                
+                return;
+            }
+
+            if(status === "nvm") {
+                $(`#isi-text-${IdPesan}`).removeClass("d-none");
+                $(`#isi-text-${IdPesan}`).addClass("d-flex");
+                $(`#edit-text-${IdPesan}`).removeClass("d-flex");
+                $(`#edit-text-${IdPesan}`).addClass("d-none");
+
+                return;
+            }
+
+            const EditTextPesan = $(`#textarea-${IdPesan}`).val();
+            $.ajax({
+                url: "/chat/{{.karakter.ID}}/updatepesan",
+                type: "POST",
+                data: JSON.stringify({ id: IdPesan, chat: EditTextPesan }),
+                contentType: "application/json"
+            }).done(v => {
+                if(v.status !== "sukses") {
+                    return;
+                }
+
+                $(`#textchat-${IdPesan}`).text(EditTextPesan);
+
+                $(`#isi-text-${IdPesan}`).removeClass("d-none");
+                $(`#isi-text-${IdPesan}`).addClass("d-flex");
+                $(`#edit-text-${IdPesan}`).removeClass("d-flex");
+                $(`#edit-text-${IdPesan}`).addClass("d-none");
             });
         }
 

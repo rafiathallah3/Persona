@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"log"
-	"strings"
 
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
@@ -65,7 +64,7 @@ func BuatChat(client *genai.Client, karakter Karakter, personalitas Personalitas
 			{
 				Parts: []genai.Part{
 					// genai.Text("*Smiles at him* Hello! Welcome to my barbershop! Please sit on the chair."),
-					genai.Text(strings.ReplaceAll(strings.ReplaceAll(karakter.Chat, "{{char}}", karakter.Nama), "{{user}}", personalitas.Nama)),
+					genai.Text(karakter.RenderChat(personalitas.Nama)),
 				},
 				Role: "model",
 			},
