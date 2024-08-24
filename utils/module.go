@@ -23,6 +23,24 @@ type DataHistoryChat struct {
 	Waktu time.Time
 }
 
+type PostChat struct {
+	KarakterID string `json:"karakterID"`
+	ChatID     string `json:"chatID"`
+	PesanID    string `json:"pesanID"`
+	Chat       string `json:"chat"`
+}
+
+type DataInitChat struct {
+	Karakter     Karakter
+	KarakterChat KarakterChat
+	PostChat     PostChat
+}
+
+type ListChat struct {
+	IDChat       uint64
+	ChatTerakhir string
+}
+
 func Map[T, U any](ts []T, f func(T) U) []U {
 	us := make([]U, len(ts))
 	for i := range ts {
@@ -75,7 +93,7 @@ func (personalitas Personalitas) RenderPersonalitas(username string) string {
 }
 
 func (karakter Karakter) RenderPersonalitas(username string) string {
-	return fmt.Sprintf("Your name is %s, ", karakter.Nama) + strings.ReplaceAll(strings.ReplaceAll(karakter.Personalitas, "{{char}}", karakter.Nama), "{{user}}", username)
+	return fmt.Sprintf("Your name is %s, You are currently talking with %s", karakter.Nama, karakter.Nama) + strings.ReplaceAll(strings.ReplaceAll(karakter.Personalitas, "{{char}}", karakter.Nama), "{{user}}", username)
 }
 
 func (karakter Karakter) RenderChat(username string) string {
@@ -116,6 +134,15 @@ func DapatinHistoryKarakter(karakterChat KarakterChat) ([]*genai.Content, []Data
 	}
 
 	return genAIHistoryChat, dataHistoryChat
+}
+
+func StringDiSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
 
 func DapatinEnvVariable(key string) string {

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"persona/database"
 	"persona/utils"
@@ -12,25 +13,71 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitChat(c *gin.Context) (*gorm.DB, utils.Akun, utils.Karakter, utils.KarakterChat, error) {
+func InitAkunDB(c *gin.Context) (*gorm.DB, utils.Akun) {
 	dbRaw, _ := c.Get("db")
 	db := dbRaw.(*gorm.DB)
 
 	akunRaw, _ := c.Get("akun")
 	akun := akunRaw.(utils.Akun)
 
+	return db, akun
+}
+
+func InitChat(c *gin.Context) (utils.DataInitChat, error) {
+	dataInitChat := utils.DataInitChat{}
+
+	db, akun := InitAkunDB(c)
+
+	var dataPost utils.PostChat
+	idKarakter := strings.ReplaceAll(c.Param("idkarakter"), "/", "")
+	idChat := strings.ReplaceAll(c.Param("idchat"), "/", "")
+
+	if c.Request.Method == "POST" {
+		postKarakterID := c.PostForm("karakterID")
+
+		if postKarakterID == "" {
+			if err := c.Bind(&dataPost); err != nil {
+				return dataInitChat, errors.New("paramater missing")
+			}
+		} else {
+			dataPost = utils.PostChat{
+				KarakterID: c.PostForm("karakterID"),
+				ChatID:     c.PostForm("chatID"),
+			}
+		}
+
+		idKarakter = dataPost.KarakterID
+		dataInitChat.PostChat = dataPost
+
+		fmt.Println("POST!!")
+		fmt.Println(dataPost.KarakterID)
+		fmt.Println(dataPost.Chat)
+	}
+
 	var karakter utils.Karakter
-	db.Where("ID = ?", c.Param("idchat")).First(&karakter)
+	db.Where("ID = ?", idKarakter).First(&karakter)
+
+	dataInitChat.Karakter = karakter
 
 	if karakter.ID == 0 {
-		return db, akun, karakter, utils.KarakterChat{}, errors.New("tidak ada karakter")
+		return dataInitChat, errors.New("tidak ada karakter")
 	}
 
 	karakterChat := utils.KarakterChat{}
-	db.Where("karakter_id = ? AND pechat_id = ?", karakter.ID, akun.ID).Preload("History").First(&karakterChat)
+	if idChat != "" {
+		db.Where("id = ? AND pechat_id = ?", idChat, akun.ID).Preload("History").First(&karakterChat)
+	}
 
-	return db, akun, karakter, karakterChat, nil
+	if karakterChat.ID == 0 && idChat == "" {
+		db.Where("karakter_id = ? AND pechat_id = ?", karakter.ID, akun.ID).Preload("History").First(&karakterChat)
+	}
+
+	dataInitChat.KarakterChat = karakterChat
+
+	return dataInitChat, nil
 }
+
+var ContohPathPersonalitas = []string{"/api/chat/buatchat", "/api/chat/ulangipesan", "/api/chat/sarankalimat", "/api/chat/", "/personalitas"}
 
 func DapatinAkun() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -43,10 +90,10 @@ func DapatinAkun() gin.HandlerFunc {
 			return
 		}
 
-		urlPath := strings.Split(ctx.Request.URL.Path, "/")
+		splitPath := strings.Split(ctx.Request.URL.Path, "/")
 		joinsString := []string{}
 
-		if (urlPath[0] == "chat" && urlPath[2] != "hapuspesan") || urlPath[0] == "personalitas" {
+		if utils.StringDiSlice(ctx.Request.URL.Path, ContohPathPersonalitas) || splitPath[1] == "chat" {
 			joinsString = append(joinsString, "Personalitas")
 		}
 

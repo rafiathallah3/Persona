@@ -50,7 +50,7 @@ func BuatModel(client *genai.Client, SystemInstruction *genai.Content) *genai.Ge
 func BuatChat(client *genai.Client, karakter Karakter, personalitas Personalitas, history []*genai.Content) *genai.ChatSession {
 	model := BuatModel(client, &genai.Content{
 		Parts: []genai.Part{
-			genai.Text(karakter.RenderPersonalitas(personalitas.Nama)),
+			genai.Text(karakter.RenderPersonalitas(personalitas.Nama) + "\n" + personalitas.Personalitas),
 			// genai.Text("Your name is Rudi, You are a man and a barber who runs a barbershop, suddenly a customer named John comes to your shop getting a haircut"),
 			// genai.Text("Your name is Sarah, You like playing games and studying and currently you have a boyfriend named John. You are now in his house"),
 		},

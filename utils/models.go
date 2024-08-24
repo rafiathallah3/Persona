@@ -10,11 +10,11 @@ type Akun struct {
 	Email             string         `json:"email" gorm:"unique;size:60"`
 	Password          string         `json:"password"`
 	ImageURL          string         `json:"image_url" gorm:"default:'/assets/no-users.png'"`
-	PembuatanKarakter []Karakter     `gorm:"constraint:OnUpdate:CASCADE;foreignkey:AkunID"`
-	ChatKarakter      []KarakterChat `gorm:"constraint:OnUpdate:CASCADE;foreignkey:PechatID"`
-	ListPersonalitas  []Personalitas `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignkey:AkunID"`
+	PembuatanKarakter []Karakter     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignkey:AkunID"`
+	ChatKarakter      []KarakterChat `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignkey:PechatID"`
+	ListPersonalitas  []Personalitas `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignkey:AkunID"`
 	PersonalitasID    *uint64        `gorm:"index"`
-	Personalitas      Personalitas   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:PersonalitasID"`
+	Personalitas      Personalitas   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:PersonalitasID"`
 	CreatedAt         time.Time
 }
 
@@ -34,14 +34,14 @@ type Karakter struct {
 	Chat              string `json:"chat"`
 	Gambar            string
 	CreatedAt         time.Time
-	SemuaKarakterChat []KarakterChat `gorm:"constraint:OnUpdate:CASCADE;foreignkey:KarakterID"`
+	SemuaKarakterChat []KarakterChat `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignkey:KarakterID"`
 	AkunID            uint64         `gorm:"index"`
 	Akun              Akun
 }
 
 type KarakterChat struct {
 	ID         uint64    `gorm:"primaryKey"`
-	History    []IsiChat `gorm:"constraint:OnUpdate:CASCADE;foreignkey:RoomChatID"`
+	History    []IsiChat `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignkey:RoomChatID"`
 	KarakterID uint64    `gorm:"index"`
 	PechatID   uint64    `gorm:"index"`
 }

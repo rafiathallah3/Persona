@@ -88,6 +88,14 @@
             display: none;
         }
 
+        .tapo-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hover:hover {
+            cursor: pointer;
+        }
+
         .loader {
             width: 60px;
             aspect-ratio: 4;
@@ -119,22 +127,45 @@
                     <i class="bi bi-gear-fill"></i>
                 </button>
                 <ul class="dropdown-menu" style="background-color: #2d2d2d;">
-                    <li><a class="dropdown-item text-white" href="#">Clear Chat</a></li>
-                    <li><a class="dropdown-item" style="color: red;" href="#">Delete Chat</a></li>
+                    <li>
+                        <form action="/api/chat/buatchat" method="post">
+                            <input type="hidden" name="karakterID" value="{{ .karakter.ID }}" />
+                            <input type="hidden" name="status" value="baru" />
+                            {{ if .idchat }} 
+                            <input type="hidden" name="chatID" value="{{ .chatid }}" />
+                            {{ end }}
+                            <input type="submit" class="dropdown-item" style="color: white;" value="New Chat" />
+                        </form>
+                    </li>
+                    <li>
+                        <form action="/api/chat/buatchat" method="post">
+                            <input type="hidden" name="karakterID" value="{{ .karakter.ID }}" />
+                            <input type="hidden" name="status" value="clone" />
+                            {{ if .idchat }} 
+                            <input type="hidden" name="chatID" value="{{ .chatid }}" />
+                            {{ end }}
+                            <input type="submit" class="dropdown-item" style="color: white;" value="Clone Chat" />
+                        </form>
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item" style="color: white;" data-bs-toggle="modal" data-bs-target="#HapusChat">
+                            Delete Chat
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item" style="color: white;" data-bs-toggle="modal" data-bs-target="#ListChat">
+                            List Chat
+                        </button>
+                    </li>
                     <li><hr class="dropdown-divider" style="background-color: white;"></li>
                     <li><a class="dropdown-item text-white" href="#" data-bs-toggle="modal" data-bs-target="#Personalitas">Create Personality</a></li>
-                    <li><div class="text-white" style="padding: .25rem 1rem; white-space: nowrap;" id="nama-personalitas">Personality: {{ .akun.Personalitas.Nama }}</div></li>
+                    <li><div class="text-white" style="padding: .25rem 1rem; white-space: nowrap;" id="nama-personalitas">{{ if .akun.Personalitas.Nama }}Personality: {{ .akun.Personalitas.Nama }}{{else}}No Personality{{end}}</div></li>
                     {{ if eq .karakter.AkunID .akun.ID }}
                     <li><hr class="dropdown-divider" style="background-color: white;"></li>
                     <li>
                         <a href="/editkarakter/{{ .karakter.ID }}" class="dropdown-item text-white">
                             Edit Character
                         </a>
-                    </li>
-                    <li>
-                        <button type="button" class="dropdown-item" style="color: red;" data-bs-toggle="modal" data-bs-target="#HapusKarakter">
-                            Delete Character
-                        </button>
                     </li>
                     {{ end }}
                 </ul>
@@ -151,30 +182,32 @@
             {{ $user := "user" }}
             {{ $panjangChat := .PanjangChat}}
             {{ range $index, $element := .isi }}
-            <div class="d-flex mx-2 mb-2">
+            <div class="d-flex mx-2 mb-2" data-id="{{$element.ID}}">
                 <div class="d-flex w-100 text-white isi-text" id="isi-text-{{$element.ID}}">
                     <div id="textchat-{{$element.ID}}" class="p-2 text-awal {{ if eq $element.Role $user }}background-hijau{{ else }}background-abuabu{{ end }}">{{ $element.Chat }}</div>            
-                    {{ if and (ne $index 0) (ne $element.Role $user) (eq $index $panjangChat) }}
-                    <div class="btn-group">
-                        <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
-                        </button>
-                        <ul class="dropdown-menu" style="background-color: #2d2d2d;">
-                            <li><button class="dropdown-item text-white" onclick="UlangiPesan()">Refresh Message</button></li>
-                            <li><button class="dropdown-item text-white" onclick="UpdatePesan('edit', '{{$element.ID}}')">Edit Message</button></li>
-                            <li><button class="dropdown-item" style="color: red;" onclick="HapusPesan()">Delete Message</button></li>
-                        </ul>
-                    </div>
+                    {{ if and (or ( and (eq $index 0) (eq $panjangChat 0) ) (eq $index $panjangChat)) (ne $element.Role $user)  }}
+                        <div>
+                            <button class="dropdown ulangi-pesan text-white" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="top: calc(50% - 15px);">
+                                <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
+                            </button>
+                            <ul class="dropdown-menu" style="background-color: #2d2d2d;">
+                                <li><button class="dropdown-item text-white" onclick="UpdatePesan('edit', '{{$element.ID}}')"><i class="bi bi-pencil"></i> Edit Message</button></li>
+                                {{ if ne $panjangChat 0 }}
+                                <li><button class="dropdown-item text-white" onclick="UlangiPesan()"><i class="bi bi-arrow-clockwise"></i> Refresh Message</button></li>
+                                <li><button class="dropdown-item" style="color: red;" onclick="HapusPesan()"><i class="bi bi-trash"></i> Delete Message</button></li>
+                                {{ end }}
+                            </ul>
+                        </div>
                     {{ end }}
                 </div>
 
                 <div class="d-none w-100 edit-text" id="edit-text-{{$element.ID}}">
                     <textarea id="textarea-{{$element.ID}}" class="p-2 text-white text-awal" style="background-color: #545353; border: 1px solid rgb(133, 133, 133); outline: none; resize: none">{{ $element.Chat }}</textarea>
                     <div class="d-flex flex-column">
-                        <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('konfirmasi', '{{$element.ID}}')">
+                        <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('konfirmasi', '{{$element.ID}}')">
                             <i class="bi bi-check h4 p-1"></i>
                         </button>
-                        <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('nvm', '{{$element.ID}}')">
+                        <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('nvm', '{{$element.ID}}')">
                             <i class="bi bi-x h4 p-1"></i>
                         </button>
                     </div>
@@ -210,6 +243,56 @@
                     <p>Are you sure you want to delete YOUR OWN character creation?</p>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Nevermind</button>
                     <button type="button" class="btn btn-danger">Yes, Delete!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="HapusChat" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered text-white">
+            <div class="modal-content" style="background-color: #191919;">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Chat</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete chat?</p>
+                    <form action="/api/chat/hapuschat" method="post" enctype="">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Nevermind</button>
+                        <input type="hidden" name="karakterID" value="{{ .karakter.ID }}" />
+                        {{ if .idchat }} 
+                        <input type="hidden" name="chatID" value="{{ .chatid }}" />
+                        {{ end }}
+                        <input type="submit" class="btn btn-danger" value="Yes, Delete!" />
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ListChat" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered text-white">
+            <div class="modal-content" style="background-color: #191919;">
+                <div class="modal-header">
+                    <h5 class="modal-title">List Chat</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>All list chat</p>
+                    {{ $Karakter := .karakter }}
+                    {{ range $index, $element := .semuaChat }}
+                    <div onclick="window.location.replace('/chat/{{$Karakter.ID}}/{{$element.IDChat}}')" class="background-abuabu rounded mb-2 hover" style="max-height: 80px; height: 80px; border: 2px solid; border-color: rgb(196, 196, 196);">
+                        <div class="d-flex">
+                            <div class="p-2 flex-shrink-1">
+                                <img src="{{ $Karakter.Gambar }}" alt="" width="50" height="50" class="rounded-1" />
+                            </div>
+                            <div class="p-2 w-100">
+                                <div>{{ $Karakter.Nama }}</div>
+                                <div class="overflow-auto tapo-scrollbar" style="height: calc(6dvh - 15px)">{{ $element.ChatTerakhir }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {{ end }}
                 </div>
             </div>
         </div>
@@ -305,19 +388,43 @@
             return text.replace(/\*(.*?)\*/g, "<b><i>$1</i></b>")
         }
 
-        function TambahinText(text) {
+        function OriginalText(text) {
+            return text.replace(/<b><i>(.*?)<\/i><\/b>/g, "*$1*")
+        }
+
+        function TambahinDropDownUntukSatu(id) {
+            return document.getElementById("tempat_chat").children.length > 1 ?  `
+                <li><button class="dropdown-item text-white" onclick="UpdatePesan('edit', '${id}')"><i class="bi bi-pencil"></i> Edit Message</button></li>
+                <li><button class="dropdown-item" style="color: red;" onclick="HapusPesan()"><i class="bi bi-trash"></i> Delete Message</button></li>
+                ` : "";
+        }
+
+        function TambahinText(text, id) {
             return `
             <div class="d-flex mx-2 mb-2">
-                <div class="p-2 text-white text-awal background-abuabu">${RenderText(text)}</div>
-                <div class="btn-group">
-                    <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
-                    </button>
-                    <ul class="dropdown-menu" style="background-color: #2d2d2d;">
-                        <li><button class="dropdown-item text-white" onclick="UlangiPesan()">Refresh Message</button></li>
-                        <li><button class="dropdown-item text-white">Edit Message</button></li>
-                        <li><button class="dropdown-item" style="color: red;" href="#">Delete Message</button></li>
-                    </ul>
+                <div class="d-flex w-100 text-white isi-text" id="isi-text-${id}">
+                    <div id="textchat-${id}" class="p-2 text-awal background-abuabu">${RenderText(text)}</div>            
+                    <div>
+                        <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="top: calc(50% - 15px);">
+                            <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
+                        </button>
+                        <ul class="dropdown-menu" style="background-color: #2d2d2d;">
+                            <li><button class="dropdown-item text-white" onclick="UlangiPesan()"><i class="bi bi-arrow-clockwise"></i> Refresh Message</button></li>
+                            ${TambahinDropDownUntukSatu(id)}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="d-none w-100 edit-text" id="edit-text-${id}">
+                    <textarea id="textarea-${id}" class="p-2 text-white text-awal" style="background-color: #545353; border: 1px solid rgb(133, 133, 133); outline: none; resize: none">${text}</textarea>
+                    <div class="d-flex flex-column">
+                        <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('konfirmasi', '${id}')">
+                            <i class="bi bi-check h4 p-1"></i>
+                        </button>
+                        <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('nvm', '${id}')">
+                            <i class="bi bi-x h4 p-1"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             `
@@ -333,6 +440,7 @@
             const pesan = $('#pesan').val();
 
             if(pesan === "") {
+                CooldownKirimPesan = false;
                 return;
             }
 
@@ -352,11 +460,17 @@
                 </div> 
             </div>
             `)
+            $("button.ulangi-pesan").parent().remove();
+
+            $(".edit-text").removeClass("d-flex")
+            $(".edit-text").addClass("d-none")
+            $(".isi-text").addClass("d-flex")
+            $(".isi-text").removeClass("d-none")
 
             $.ajax({
-                url: "/chat/{{.karakter.ID}}",
+                url: "/api/chat",
                 type: "POST",
-                data: JSON.stringify({ "id": "{{ .karakter.ID }}", "chat": pesan }),
+                data: JSON.stringify({ "karakterID": "{{ .karakter.ID }}", "chat": pesan, chatID: "{{ .chatid }}" }),
                 contentType: "application/json"
             }).done(v => {
                 if(v.chat === undefined) {
@@ -366,7 +480,7 @@
                 $("button.ulangi-pesan").parent().remove();
                 $("#loading-chat").parent().remove();
 
-                $("#tempat_chat").append(TambahinText(v.chat))
+                $("#tempat_chat").append(TambahinText(v.chat, v.id))
 
                 CooldownKirimPesan = false;
             })
@@ -384,16 +498,16 @@
             IsiOmongan[IsiOmongan.length - 1].remove();
 
             $.ajax({
-                url: "/chat/{{.karakter.ID}}/ulangipesan",
+                url: "/api/chat/ulangipesan",
                 type: "POST",
-                data: "",
+                data: JSON.stringify({ "karakterID": "{{ .karakter.ID }}" }),
                 contentType: "application/json"
             }).done(v => {
                 if(v.chat === undefined) {
                     return;
                 }
 
-                $("#tempat_chat").append(TambahinText(v.chat))
+                $("#tempat_chat").append(TambahinText(v.chat, v.id))
                 CooldownUlangiPesan = false;
             });
         }
@@ -408,9 +522,9 @@
             const IsiOmongan =$("#tempat_chat").children("div");
 
             $.ajax({
-                url: "/chat/{{.karakter.ID}}/hapuspesan",
+                url: "/api/chat/hapuspesan",
                 type: "POST",
-                data: "",
+                data: JSON.stringify({ karakterID: "{{ .karakter.ID }}", chatID: "{{ .chatid }}" }),
                 contentType: "application/json"
             }).done(v => {
                 if(v.status !== "sukses" || IsiOmongan.length - 2 < 0) {
@@ -420,20 +534,32 @@
                 IsiOmongan[IsiOmongan.length - 1].remove();
                 IsiOmongan[IsiOmongan.length - 2].remove();
 
+                const IDSebelumnya = IsiOmongan[IsiOmongan.length - 3].getAttribute("data-id");
+                $(IsiOmongan[IsiOmongan.length - 3]).find('.isi-text').append(`
+                <div class="btn-group">
+                    <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
+                    </button>
+                    <ul class="dropdown-menu" style="background-color: #2d2d2d;">
+                        <li><button class="dropdown-item text-white" onclick="UlangiPesan()">Refresh Message</button></li>
+                        ${TambahinDropDownUntukSatu(IDSebelumnya)}
+                    </ul>
+                </div>
+                `)
+
                 CooldownHapus = false;
             });
         }
 
         let SaranKalimatText = "";
-
         function SaranKalimat() {
             $("#sarankalimat").css("display", "none");
             $("#loader-sarankalimat").css("display", "block");
 
             $.ajax({
-                url: "/chat/{{.karakter.ID}}/sarankalimat",
+                url: "/api/chat/sarankalimat",
                 type: "POST",
-                data: "",
+                data: JSON.stringify({ "karakterID": "{{ .karakter.ID }}", chatID: "{{ .chatid }}" }),
                 contentType: "application/json"
             }).done(v => {
                 $("#sarankalimat").css("display", "block");
@@ -450,6 +576,7 @@
             });
         }
 
+        let CooldownUpdatePesan = false;
         function UpdatePesan(status, IdPesan) {            
             if(status === "edit") {
                 const tinggi = $(`#edit-text-${IdPesan}`).parent().height();
@@ -460,6 +587,7 @@
                 $(`#edit-text-${IdPesan}`).removeClass("d-none");
 
                 $(`#textarea-${IdPesan}`).height(tinggi);
+                $(`#textarea-${IdPesan}`).val(OriginalText($(`#textarea-${IdPesan}`).val()))
                 
                 return;
             }
@@ -473,23 +601,30 @@
                 return;
             }
 
+            if(CooldownUpdatePesan) {
+                return;
+            }
+            CooldownUpdatePesan = true;
+
             const EditTextPesan = $(`#textarea-${IdPesan}`).val();
             $.ajax({
-                url: "/chat/{{.karakter.ID}}/updatepesan",
+                url: "/api/chat/updatepesan",
                 type: "POST",
-                data: JSON.stringify({ id: IdPesan, chat: EditTextPesan }),
+                data: JSON.stringify({ karakterID: "{{ .karakter.ID }}", chat: EditTextPesan, pesanID: IdPesan, chatID: "{{ .chatid }}" }),
                 contentType: "application/json"
             }).done(v => {
                 if(v.status !== "sukses") {
                     return;
                 }
 
-                $(`#textchat-${IdPesan}`).text(EditTextPesan);
+                $(`#textchat-${IdPesan}`).html(RenderText(EditTextPesan));
 
                 $(`#isi-text-${IdPesan}`).removeClass("d-none");
                 $(`#isi-text-${IdPesan}`).addClass("d-flex");
                 $(`#edit-text-${IdPesan}`).removeClass("d-flex");
                 $(`#edit-text-${IdPesan}`).addClass("d-none");
+
+                CooldownUpdatePesan = false;
             });
         }
 
