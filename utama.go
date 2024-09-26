@@ -36,11 +36,6 @@ func PanjangArrayKurangSatu(arr []any) int {
 }
 
 func main() {
-	// sk-proj-pSehnOF8HPuzFkEU2NK0T3BlbkFJxrUc1Pu0PXkHruHhzjbN
-	// gmCePyjssc9j9I5hw29ymg
-
-	// postgresql://rapithon:gmCePyjssc9j9I5hw29ymg@per-chat-7248.6xw.aws-ap-southeast-1.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full
-
 	database.Connect()
 	utils.InitCloudinary()
 
