@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -37,6 +38,7 @@ func PanjangArrayKurangSatu(arr []any) int {
 func main() {
 	// sk-proj-pSehnOF8HPuzFkEU2NK0T3BlbkFJxrUc1Pu0PXkHruHhzjbN
 	// gmCePyjssc9j9I5hw29ymg
+
 	// postgresql://rapithon:gmCePyjssc9j9I5hw29ymg@per-chat-7248.6xw.aws-ap-southeast-1.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full
 
 	database.Connect()
@@ -53,7 +55,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	r.StaticFile("/favicon.ico", "./assets/IconPer.png")
 	r.Use(sessions.Sessions("session", cookie.NewStore(secret)))
-	r.MaxMultipartMemory = 5 << 20
+	// r.MaxMultipartMemory = 20 << 20
 
 	r.GET("/", func(ctx *gin.Context) {
 		db := database.GetDatabase()
@@ -64,8 +66,49 @@ func main() {
 		var SemuaKarakter []utils.Karakter
 		db.Find(&SemuaKarakter)
 
+		var rawSemuaChat []utils.KarakterChat
+		db.Preload("History").Preload("Karakter").Find(&rawSemuaChat, utils.KarakterChat{PechatID: akun.ID})
+
+		var listChat []utils.ListChat
+		for _, value := range rawSemuaChat {
+			listChat = append(listChat, utils.ListChat{
+				IDChat:       value.ID,
+				IDKarakter:   value.Karakter.ID,
+				ChatTerakhir: value.History[len(value.History)-1].Chat,
+				Nama:         value.Karakter.Nama,
+				Gambar:       value.Karakter.Gambar,
+				Tag:          value.Karakter.Kategori,
+				CreatedAt:    value.Karakter.CreatedAt,
+			})
+		}
+
+		for i := 0; i < len(listChat)-1; i++ {
+			for j := i + 1; j < len(listChat); j++ {
+				if listChat[i].CreatedAt.After(listChat[j].CreatedAt) {
+					listChat[i], listChat[j] = listChat[j], listChat[i]
+				}
+			}
+		}
+
 		ctx.HTML(http.StatusOK, "index.html", gin.H{
-			"title":    "Main",
+			"title":     "Main",
+			"akun":      akun,
+			"karakter":  SemuaKarakter,
+			"semuaChat": listChat,
+		})
+	})
+
+	r.GET("/search", func(ctx *gin.Context) {
+		db := database.GetDatabase()
+		session := sessions.Default(ctx)
+
+		akun := utils.DapatinAkun(db, session, nil)
+
+		var SemuaKarakter []utils.Karakter
+		db.Find(&SemuaKarakter)
+
+		ctx.HTML(http.StatusOK, "cari.html", gin.H{
+			"title":    "Search Character",
 			"akun":     akun,
 			"karakter": SemuaKarakter,
 		})
@@ -141,11 +184,7 @@ func main() {
 		})
 
 		redirectLoginAutentikasi.POST("/karakter/", func(ctx *gin.Context) {
-			dbRaw, _ := ctx.Get("db")
-			db := dbRaw.(*gorm.DB)
-
-			akunRaw, _ := ctx.Get("akun")
-			akun := akunRaw.(utils.Akun)
+			db, akun := routes.InitAkunDB(ctx)
 
 			session := sessions.Default(ctx)
 
@@ -166,7 +205,6 @@ func main() {
 				}
 
 				statusUpdate := ctx.PostForm("status_edit")
-				fmt.Println(statusUpdate)
 
 				if statusUpdate == "Delete" {
 					utils.HapusGambar(strconv.FormatUint(karakter.ID, 10))
@@ -179,11 +217,18 @@ func main() {
 				}
 			}
 
+			kategori := ctx.PostForm("kategori")
+			if !slices.Contains(utils.Kategori, kategori) {
+				ctx.Redirect(http.StatusFound, "/buatkarakter")
+				return
+			}
+
 			newKarakter := utils.Karakter{
 				Nama:         ctx.PostForm("nama"),
 				NamaLain:     ctx.PostForm("namalain"),
 				Personalitas: ctx.PostForm("personalitas"),
-				Kategori:     ctx.PostForm("kategori"),
+				Kategori:     kategori,
+				Deskripsi:    ctx.PostForm("deskripsi"),
 				Chat:         ctx.PostForm("chat"),
 				AkunID:       akun.ID,
 				Akun:         akun,
@@ -196,22 +241,28 @@ func main() {
 
 			file, err := ctx.FormFile("foto")
 
-			if err == nil {
-				PathFile := "assets/gambar/" + strconv.Itoa(int(akun.ID)) + ".png"
-				// PathFile := "assets/gambar/" + akun.ID.String() + ".png"
-				ctx.SaveUploadedFile(file, PathFile)
-
-				hasil := utils.UploadGambar(strconv.Itoa(int(akun.ID)))
-				// hasil := utils.UploadGambar(akun.ID.String())
-				newKarakter.Gambar = hasil.URL
-
-				defer os.Remove(PathFile)
+			if err != nil && status == "buat" {
+				newKarakter.Gambar = "/assets/no-users.png"
 			}
 
 			if status == "buat" {
 				db.Create(&newKarakter)
 			} else {
 				db.Save(&newKarakter)
+			}
+
+			if err == nil {
+				PathFile := "assets/gambar/" + strconv.Itoa(int(newKarakter.ID)) + ".png"
+				// PathFile := "assets/gambar/" + newKarakter.ID.String() + ".png"
+				ctx.SaveUploadedFile(file, PathFile)
+
+				hasil := utils.UploadGambar(strconv.Itoa(int(newKarakter.ID)))
+				// hasil := utils.UploadGambar(newKarakter.ID.String())
+				newKarakter.Gambar = hasil.URL
+
+				db.Model(&newKarakter).Update("Gambar", hasil.URL)
+
+				defer os.Remove(PathFile)
 			}
 
 			ctx.Redirect(http.StatusFound, fmt.Sprintf("/editkarakter/%d", newKarakter.ID))
@@ -406,6 +457,7 @@ func main() {
 			}
 
 			isiCharDiPilih := dataChat.KarakterChat.History[len(dataChat.KarakterChat.History)-1]
+			ChatDulu := isiCharDiPilih.Chat
 			db.Model(&isiCharDiPilih).Update("chat", fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0]))
 
 			// HistoryChat = append(HistoryChat, &genai.Content{
@@ -416,8 +468,9 @@ func main() {
 			// })
 
 			ctx.IndentedJSON(http.StatusCreated, gin.H{
-				"chat": resp.Candidates[0].Content.Parts[0],
-				"id":   strconv.FormatUint(isiCharDiPilih.ID, 10),
+				"chat":     resp.Candidates[0].Content.Parts[0],
+				"chatDulu": ChatDulu,
+				"id":       strconv.FormatUint(isiCharDiPilih.ID, 10),
 			})
 		})
 

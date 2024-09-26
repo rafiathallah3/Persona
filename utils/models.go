@@ -29,6 +29,7 @@ type Karakter struct {
 	ID                uint64 `json:"id" gorm:"primaryKey"`
 	Nama              string `json:"nama"`
 	NamaLain          string `json:"namalain"`
+	Deskripsi         string `json:"deskripsi"`
 	Personalitas      string `json:"personalitas"`
 	Kategori          string `json:"kategori"`
 	Chat              string `json:"chat"`
@@ -43,7 +44,10 @@ type KarakterChat struct {
 	ID         uint64    `gorm:"primaryKey"`
 	History    []IsiChat `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignkey:RoomChatID"`
 	KarakterID uint64    `gorm:"index"`
-	PechatID   uint64    `gorm:"index"`
+	Karakter   Karakter
+	PechatID   uint64 `gorm:"index"`
+	Pechat     Akun
+	CreatedAt  time.Time
 }
 
 type IsiChat struct {

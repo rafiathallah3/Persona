@@ -38,8 +38,15 @@ type DataInitChat struct {
 
 type ListChat struct {
 	IDChat       uint64
+	IDKarakter   uint64
 	ChatTerakhir string
+	Nama         string
+	Gambar       string
+	Tag          string
+	CreatedAt    time.Time
 }
+
+var Kategori = []string{"Anime", "Comic", "Movie", "Girl", "Boy"}
 
 func Map[T, U any](ts []T, f func(T) U) []U {
 	us := make([]U, len(ts))

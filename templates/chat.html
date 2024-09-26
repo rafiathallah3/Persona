@@ -122,6 +122,9 @@
                 <span class="text-white" style="font-weight: 600; font-size: larger;">{{ .karakter.Nama }}</span>
                 <span class="text-white-50">{{ .karakter.NamaLain }} </span>
             </div>
+            <a class="mx-3" style="text-decoration: none;" href="/">
+                <img src="/assets/PerDepan.png" alt="" style="width: 32px;" />
+            </a>
             <div class="dropdown">
                 <button class="tombol-ujung" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-gear-fill"></i>
@@ -182,36 +185,48 @@
             {{ $user := "user" }}
             {{ $panjangChat := .PanjangChat}}
             {{ range $index, $element := .isi }}
-            <div class="d-flex mx-2 mb-2" data-id="{{$element.ID}}">
-                <div class="d-flex w-100 text-white isi-text" id="isi-text-{{$element.ID}}">
-                    <div id="textchat-{{$element.ID}}" class="p-2 text-awal {{ if eq $element.Role $user }}background-hijau{{ else }}background-abuabu{{ end }}">{{ $element.Chat }}</div>            
-                    {{ if and (or ( and (eq $index 0) (eq $panjangChat 0) ) (eq $index $panjangChat)) (ne $element.Role $user)  }}
-                        <div>
-                            <button class="dropdown ulangi-pesan text-white" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="top: calc(50% - 15px);">
-                                <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
+            <div class="mb-2 mx-2">
+                <div class="d-flex" data-id="{{$element.ID}}">
+                    <div class="d-flex w-100 text-white isi-text" id="isi-text-{{$element.ID}}">
+                        <div id="textchat-{{$element.ID}}" class="p-2 text-awal {{ if eq $element.Role $user }}background-hijau{{ else }}background-abuabu{{ end }}">{{ $element.Chat }}</div>            
+                        {{ if and (or ( and (eq $index 0) (eq $panjangChat 0) ) (eq $index $panjangChat)) (ne $element.Role $user)  }}
+                            <div>
+                                <button class="dropdown ulangi-pesan text-white" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="top: calc(50% - 15px);">
+                                    <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
+                                </button>
+                                <ul class="dropdown-menu" style="background-color: #2d2d2d;">
+                                    <li><button class="dropdown-item text-white" onclick="GantiStatusText('edit', '{{$element.ID}}')"><i class="bi bi-pencil"></i> Edit Message</button></li>
+                                    {{ if ne $panjangChat 0 }}
+                                    <li><button class="dropdown-item text-white" onclick="UlangiPesan()"><i class="bi bi-arrow-clockwise"></i> Refresh Message</button></li>
+                                    <li><button class="dropdown-item" style="color: red;" onclick="HapusPesan()"><i class="bi bi-trash"></i> Delete Message</button></li>
+                                    {{ end }}
+                                </ul>
+                            </div>
+                        {{ end }}
+                    </div>
+    
+                    <div class="d-none w-100 edit-text" id="edit-text-{{$element.ID}}">
+                        <textarea id="textarea-{{$element.ID}}" class="p-2 text-white text-awal" style="background-color: #545353; border: 1px solid rgb(133, 133, 133); outline: none; resize: none">{{ $element.Chat }}</textarea>
+                        <div class="d-flex flex-column">
+                            <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="GantiStatusText('konfirmasi', '{{$element.ID}}')">
+                                <i class="bi bi-check h4 p-1"></i>
                             </button>
-                            <ul class="dropdown-menu" style="background-color: #2d2d2d;">
-                                <li><button class="dropdown-item text-white" onclick="UpdatePesan('edit', '{{$element.ID}}')"><i class="bi bi-pencil"></i> Edit Message</button></li>
-                                {{ if ne $panjangChat 0 }}
-                                <li><button class="dropdown-item text-white" onclick="UlangiPesan()"><i class="bi bi-arrow-clockwise"></i> Refresh Message</button></li>
-                                <li><button class="dropdown-item" style="color: red;" onclick="HapusPesan()"><i class="bi bi-trash"></i> Delete Message</button></li>
-                                {{ end }}
-                            </ul>
+                            <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="GantiStatusText('nvm', '{{$element.ID}}')">
+                                <i class="bi bi-x h4 p-1"></i>
+                            </button>
                         </div>
-                    {{ end }}
-                </div>
-
-                <div class="d-none w-100 edit-text" id="edit-text-{{$element.ID}}">
-                    <textarea id="textarea-{{$element.ID}}" class="p-2 text-white text-awal" style="background-color: #545353; border: 1px solid rgb(133, 133, 133); outline: none; resize: none">{{ $element.Chat }}</textarea>
-                    <div class="d-flex flex-column">
-                        <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('konfirmasi', '{{$element.ID}}')">
-                            <i class="bi bi-check h4 p-1"></i>
-                        </button>
-                        <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('nvm', '{{$element.ID}}')">
-                            <i class="bi bi-x h4 p-1"></i>
-                        </button>
                     </div>
                 </div>
+                {{ if and (or ( and (eq $index 0) (eq $panjangChat 0) ) (eq $index $panjangChat)) (ne $element.Role $user)  }}
+                <div class="d-none justify-content-center text-white" id="lanjutan-ulang">
+                    <button class="text-white me-1" style="background-color: transparent; border: 0; text-align: center;" id="lanjutan-kiri" onclick="LanjutanChat('kiri', '{{$element.ID}}');">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <button class="text-white ms-1" style="background-color: transparent; border: 0; text-align: center;" id="lanjutan-kanan" onclick="LanjutanChat('kanan', '{{$element.ID}}');">
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+                {{ end }}
             </div>
             {{ end }}  
         </div>
@@ -384,6 +399,11 @@
     {{ template "body.html" }}
 
     <script>
+        // https://www.omarileon.me/blog/javascript-clamp
+        function clamp(num, lower, upper) {
+            return Math.min(Math.max(num, lower), upper);
+        }
+
         function RenderText(text) {
             return text.replace(/\*(.*?)\*/g, "<b><i>$1</i></b>")
         }
@@ -394,37 +414,47 @@
 
         function TambahinDropDownUntukSatu(id) {
             return document.getElementById("tempat_chat").children.length > 1 ?  `
-                <li><button class="dropdown-item text-white" onclick="UpdatePesan('edit', '${id}')"><i class="bi bi-pencil"></i> Edit Message</button></li>
+                <li><button class="dropdown-item text-white" onclick="GantiStatusText('edit', '${id}')"><i class="bi bi-pencil"></i> Edit Message</button></li>
                 <li><button class="dropdown-item" style="color: red;" onclick="HapusPesan()"><i class="bi bi-trash"></i> Delete Message</button></li>
                 ` : "";
         }
 
         function TambahinText(text, id) {
             return `
-            <div class="d-flex mx-2 mb-2">
-                <div class="d-flex w-100 text-white isi-text" id="isi-text-${id}">
-                    <div id="textchat-${id}" class="p-2 text-awal background-abuabu">${RenderText(text)}</div>            
-                    <div>
-                        <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="top: calc(50% - 15px);">
-                            <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
-                        </button>
-                        <ul class="dropdown-menu" style="background-color: #2d2d2d;">
-                            <li><button class="dropdown-item text-white" onclick="UlangiPesan()"><i class="bi bi-arrow-clockwise"></i> Refresh Message</button></li>
-                            ${TambahinDropDownUntukSatu(id)}
-                        </ul>
+            <div>
+                <div class="d-flex mx-2 mb-2">
+                    <div class="d-flex w-100 text-white isi-text" id="isi-text-${id}">
+                        <div id="textchat-${id}" class="p-2 text-awal background-abuabu">${RenderText(text)}</div>            
+                        <div>
+                            <button class="text-white dropdown ulangi-pesan" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="top: calc(50% - 15px);">
+                                <i class="bi bi-three-dots-vertical h4 background-abuabu p-1"></i>
+                            </button>
+                            <ul class="dropdown-menu" style="background-color: #2d2d2d;">
+                                <li><button class="dropdown-item text-white" onclick="UlangiPesan()"><i class="bi bi-arrow-clockwise"></i> Refresh Message</button></li>
+                                ${TambahinDropDownUntukSatu(id)}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="d-none w-100 edit-text" id="edit-text-${id}">
+                        <textarea id="textarea-${id}" class="p-2 text-white text-awal" style="background-color: #545353; border: 1px solid rgb(133, 133, 133); outline: none; resize: none">${text}</textarea>
+                        <div class="d-flex flex-column">
+                            <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="GantiStatusText('konfirmasi', '${id}')">
+                                <i class="bi bi-check h4 p-1"></i>
+                            </button>
+                            <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="GantiStatusText('nvm', '${id}')">
+                                <i class="bi bi-x h4 p-1"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-                <div class="d-none w-100 edit-text" id="edit-text-${id}">
-                    <textarea id="textarea-${id}" class="p-2 text-white text-awal" style="background-color: #545353; border: 1px solid rgb(133, 133, 133); outline: none; resize: none">${text}</textarea>
-                    <div class="d-flex flex-column">
-                        <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('konfirmasi', '${id}')">
-                            <i class="bi bi-check h4 p-1"></i>
-                        </button>
-                        <button class="text-white dropdown" style="background-color: transparent; border: 0;" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="UpdatePesan('nvm', '${id}')">
-                            <i class="bi bi-x h4 p-1"></i>
-                        </button>
-                    </div>
+                <div class="d-none justify-content-center text-white" id="lanjutan-ulang">
+                    <button class="text-white me-1" style="background-color: transparent; border: 0; text-align: center;" id="lanjutan-kiri" onclick="LanjutanChat('kiri', '${id}');">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <button class="text-white ms-2" style="background-color: transparent; border: 0; text-align: center;" id="lanjutan-kanan" onclick="LanjutanChat('kanan', '${id}');">
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
                 </div>
             </div>
             `
@@ -460,12 +490,14 @@
                 </div> 
             </div>
             `)
-            $("button.ulangi-pesan").parent().remove();
 
-            $(".edit-text").removeClass("d-flex")
-            $(".edit-text").addClass("d-none")
-            $(".isi-text").addClass("d-flex")
-            $(".isi-text").removeClass("d-none")
+            // $("button.ulangi-pesan").parent().remove();
+            // $("#lanjutan-ulang").parent().remove();
+
+            $(".edit-text").removeClass("d-flex");
+            $(".edit-text").addClass("d-none");
+            $(".isi-text").addClass("d-flex");
+            $(".isi-text").removeClass("d-none");
 
             $.ajax({
                 url: "/api/chat",
@@ -476,6 +508,15 @@
                 if(v.chat === undefined) {
                     return;
                 }
+
+                SemuaUlangiPesan = [{...v, posisi: SemuaUlangiPesan.length + 1}];
+                // localStorage.setItem("ulangi_chat", JSON.stringify([{chat: v.chat, id: v.id}]));
+
+                isiLocalStroage["{{ .chatid }}"] = null;
+                localStorage.setItem("ulangi_chat", JSON.stringify(isiLocalStroage));
+                PosisiLanjutanChat = 0;
+                $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= SemuaUlangiPesan.length - 1 ? "none" : "block");
+                $("#lanjutan-kiri").css("display", PosisiLanjutanChat <= 0 ? "none" : "block");
 
                 $("button.ulangi-pesan").parent().remove();
                 $("#loading-chat").parent().remove();
@@ -497,19 +538,69 @@
             const IsiOmongan =$("#tempat_chat").children("div");
             IsiOmongan[IsiOmongan.length - 1].remove();
 
+            $("#tempat_chat").append(`
+            <div class="d-flex mx-2 mb-2">
+                <div class="p-3 background-abuabu" id="loading-chat">
+                    <div class="loader"></div>
+                </div> 
+            </div>
+            `)
+
             $.ajax({
                 url: "/api/chat/ulangipesan",
                 type: "POST",
                 data: JSON.stringify({ "karakterID": "{{ .karakter.ID }}" }),
                 contentType: "application/json"
             }).done(v => {
-                if(v.chat === undefined) {
+                if(v.chat === undefined || v.chat === null) {
                     return;
                 }
 
+                $("#loading-chat").parent().remove();
+
                 $("#tempat_chat").append(TambahinText(v.chat, v.id))
+
+                // PosisiLanjutanChat = 0;
+                // SemuaUlangiPesan = [{chat: v.chatDulu, id: v.id}];
+                if(SemuaUlangiPesan.length >= 0) {
+                    SemuaUlangiPesan.splice(0, 0, {...v, posisi: SemuaUlangiPesan.length});
+                    // SemuaUlangiPesan.push({chat: v.chat, id: v.id});    
+                }
+
+                isiLocalStroage["{{ .chatid }}"] = JSON.stringify(SemuaUlangiPesan);
+                localStorage.setItem("ulangi_chat", JSON.stringify(isiLocalStroage));
+
+                chat_ini["{{ .chatid }}"] = PosisiLanjutanChat;
+                localStorage.setItem("posisi_chat", JSON.stringify(chat_ini));
+                // WE NEED THIS TO BE SERVER SIDED BECAUSE ALL THE TEXT SAVED  ON THE SERVER!!!
+                // AND THE SERVER USE THE CHAT HISTORY TO GET ALL THE TEXT AND NOT CLIENT!!! 😖😭😭
+
+                $("#lanjutan-ulang").removeClass("d-none");
+                $("#lanjutan-ulang").addClass("d-flex");
+
+                $("#lanjutan-kanan").css("display", "block");
+                $("#lanjutan-kiri").css("display", PosisiLanjutanChat <= 0 ? "none" : "block");
+                
                 CooldownUlangiPesan = false;
             });
+        }
+
+        let PosisiLanjutanChat = 0;
+        function LanjutanChat(status, IdPesan) {
+            if((status !== "kanan" && status !== "kiri") || SemuaUlangiPesan.length <= 1) {
+                return;
+            }
+
+            PosisiLanjutanChat += status === "kanan" ? 1 : -1;
+            PosisiLanjutanChat = clamp(PosisiLanjutanChat, 0, SemuaUlangiPesan.length - 1);
+            chat_ini["{{ .chatid }}"] = PosisiLanjutanChat;
+            localStorage.setItem("posisi_chat", JSON.stringify(chat_ini));
+
+            $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= SemuaUlangiPesan.length - 1 ? "none" : "block");
+            $("#lanjutan-kiri").css("display", PosisiLanjutanChat <= 0 ? "none" : "block");
+            
+            $(`#textchat-${SemuaUlangiPesan[PosisiLanjutanChat].id}`).html(RenderText(SemuaUlangiPesan[PosisiLanjutanChat].chat));
+            UpdatePesan(SemuaUlangiPesan[PosisiLanjutanChat].chat, IdPesan, false);
         }
 
         let CooldownHapus = false;
@@ -576,8 +667,7 @@
             });
         }
 
-        let CooldownUpdatePesan = false;
-        function UpdatePesan(status, IdPesan) {            
+        function GantiStatusText(status, IdPesan) {
             if(status === "edit") {
                 const tinggi = $(`#edit-text-${IdPesan}`).parent().height();
 
@@ -601,12 +691,17 @@
                 return;
             }
 
+            const EditTextPesan = $(`#textarea-${IdPesan}`).val();
+            UpdatePesan(EditTextPesan, IdPesan, true);
+        }
+
+        let CooldownUpdatePesan = false;
+        function UpdatePesan(EditTextPesan, IdPesan, updateText) {            
             if(CooldownUpdatePesan) {
                 return;
             }
             CooldownUpdatePesan = true;
 
-            const EditTextPesan = $(`#textarea-${IdPesan}`).val();
             $.ajax({
                 url: "/api/chat/updatepesan",
                 type: "POST",
@@ -617,12 +712,14 @@
                     return;
                 }
 
-                $(`#textchat-${IdPesan}`).html(RenderText(EditTextPesan));
+                if(updateText) {
+                    $(`#textchat-${IdPesan}`).html(RenderText(EditTextPesan));
 
-                $(`#isi-text-${IdPesan}`).removeClass("d-none");
-                $(`#isi-text-${IdPesan}`).addClass("d-flex");
-                $(`#edit-text-${IdPesan}`).removeClass("d-flex");
-                $(`#edit-text-${IdPesan}`).addClass("d-none");
+                    $(`#isi-text-${IdPesan}`).removeClass("d-none");
+                    $(`#isi-text-${IdPesan}`).addClass("d-flex");
+                    $(`#edit-text-${IdPesan}`).removeClass("d-flex");
+                    $(`#edit-text-${IdPesan}`).addClass("d-none");
+                }
 
                 CooldownUpdatePesan = false;
             });
@@ -741,6 +838,38 @@
 
         if(IDPersonalitas == "") {
             $("#Personalitas").modal("show");
+        }
+
+        let SemuaUlangiPesan = [];
+
+        const chat_ini = JSON.parse(localStorage.getItem("posisi_chat") ?? "{}");
+        if(chat_ini["{{ .chatid }}"] === undefined) {
+            chat_ini["{{ .chatid }}"] = 0;
+        }
+        PosisiLanjutanChat = chat_ini["{{ .chatid }}"];
+
+        const isiLocalStroage = JSON.parse(localStorage.getItem("ulangi_chat") ?? "{}");
+        const RawIsiUlangiPesan = JSON.parse(isiLocalStroage["{{ .chatid }}"] ?? "[]");
+        SemuaUlangiPesan.push(...RawIsiUlangiPesan);
+    
+        if(RawIsiUlangiPesan.length <= 0) {
+            "{{ $Hasil := index .isi .PanjangChat }}"
+            SemuaUlangiPesan.push({
+                chat: "{{ $Hasil.Chat }}",
+                id: "{{ $Hasil.ID }}",
+                posisi: 0,
+            });
+        }
+
+        isiLocalStroage["{{ .chatid }}"] = JSON.stringify(SemuaUlangiPesan);
+        localStorage.setItem("ulangi_chat", JSON.stringify(isiLocalStroage));
+        
+        if(SemuaUlangiPesan.length > 0) {
+            $("#lanjutan-ulang").removeClass("d-none");
+            $("#lanjutan-ulang").addClass("d-flex");
+
+            $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= SemuaUlangiPesan.length - 1 ? "none" : "block");
+            $("#lanjutan-kiri").css("display", PosisiLanjutanChat <= 0 ? "none" : "block");
         }
     </script>
 </body>

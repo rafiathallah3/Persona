@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{ template "head.html" }}
+
+    <style>
+        .btn-success {
+            background-color: grey;
+            border-color: rgb(167, 167, 167);
+        }
+
+        .btn-success:hover {
+            background-color: rgb(144, 144, 144);
+            border-color: rgb(167, 167, 167);
+        }
+
+        .btn-check:checked+.btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check)+.btn:active {
+            background-color: rgb(144, 144, 144);
+            border-color: rgb(167, 167, 167);
+        }
+        
+        .form-select {
+            color: white !important;
+            background-color: #2d2d2d;
+            border-color: rgb(80, 80, 80);
+        }
+
+        .chat-item {
+            position: relative;
+            display: inline-block;
+            margin: 8px 8px;
+            border-radius: 5px;
+            width: 100%;
+            height: 200px;
+            vertical-align: bottom;
+            background-position: top left;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        .gambar-trending {
+            text-decoration: none;
+            color: white;
+            outline: 0px solid rgb(0, 0, 0);
+            transition: 0.2s;
+        }
+
+        .gambar-trending:hover {
+            outline: 2px solid white;
+        }
+    </style>
+</head>
+<body class="text-white" style="background-color: #1d1d1d; overflow-x: hidden;">
+    {{ template "navbar" .akun }}
+
+    <div class="my-2">
+        <div class="row">
+            <div class="col-8">
+                <h3 class="text-center">Character</h3>
+                <hr>
+                {{ range $index, $element := .karakter }}
+                <a class="chat-item gambar-trending" href="/chat/{{ $element.ID }}" style="background: grey; border: 1px solid white;">
+                    <div class="d-flex">
+                        <div class="p-2 flex-shrink-1">
+                            <img class="rounded" src="{{ $element.Gambar }}" alt="gambar" width="125" height="125" />
+                        </div>
+                        <div class="p-2 w-100">
+                            <div class="p-1">
+                                <span class="p-1" style="background-color: rgb(95, 95, 95); border: 1px solid rgb(169, 169, 169); border-radius: 5px;">{{ $element.Nama }}</span>
+                                <span class="p-1" style="background-color: rgb(95, 95, 95); border: 1px solid rgb(169, 169, 169); border-radius: 5px;">{{ $element.NamaLain }}</span>
+                            </div>
+                            <div class="overflow-auto h-100 p-2" style="background-color: rgb(95, 95, 95); border: 1px solid rgb(169, 169, 169); border-radius: 5px; white-space: normal; max-height: 150px;">
+                                {{ $element.Deskripsi }}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {{ end }}
+            </div>
+            <div class="col-sm-4">
+                <div class="mx-4">
+                    <h3 class="text-center">Filter</h3>
+                    <hr>
+                    <select class="form-select" aria-label="Default select example">
+                        <option selected>Genre</option>
+                        <option value="1">Anime</option>
+                        <option value="1">Comic</option>
+                        <option value="1">Movie</option>
+                        <option value="3">Girl</option>
+                        <option value="2">Boy</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ template "body.html" }}
+</body>
+</html>

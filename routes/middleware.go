@@ -48,6 +48,7 @@ func InitChat(c *gin.Context) (utils.DataInitChat, error) {
 
 		idKarakter = dataPost.KarakterID
 		dataInitChat.PostChat = dataPost
+		idChat = dataPost.ChatID
 
 		fmt.Println("POST!!")
 		fmt.Println(dataPost.KarakterID)
@@ -81,6 +82,8 @@ var ContohPathPersonalitas = []string{"/api/chat/buatchat", "/api/chat/ulangipes
 
 func DapatinAkun() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		fmt.Println("dapatinAkun")
+
 		db := database.GetDatabase()
 		session := sessions.Default(ctx)
 		user := session.Get("user")
@@ -106,6 +109,7 @@ func DapatinAkun() gin.HandlerFunc {
 
 func CheckAutentikasi(status string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		fmt.Println("AAA")
 		session := sessions.Default(ctx)
 		user := session.Get("user")
 
