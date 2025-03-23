@@ -18,7 +18,7 @@ var rds *redis.Client
 
 func Connect() {
 	conectDB := utils.DapatinEnvVariable("DATABASE")
-	// conectDB := "postgresql://rapithon:gmCePyjssc9j9I5hw29ymg@per-chat-7248.6xw.aws-ap-southeast-1.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full" // os.Getenv("DATABASE_URI")
+	redisDB := utils.DapatinEnvVariable("REDIS")
 	db, _ = gorm.Open(postgres.Open(conectDB), &gorm.Config{})
 	fmt.Println("Database Connected")
 
@@ -31,7 +31,7 @@ func Connect() {
 	// db.Migrator().RenameColumn(&utils.IsiChat{}, "dari_karakter_id", "room_chat_id")
 	db.AutoMigrate(&models.Akun{}, &models.Personalitas{}, &models.Karakter{}, &models.KarakterChat{}, &models.IsiChat{})
 
-	opt, _ := redis.ParseURL("rediss://default:ATyqAAIjcDFiNDg3M2FhYmFhNjI0NmNhOWViZGY4MmNkNDYwNTVhMXAxMA@rational-seahorse-15530.upstash.io:6379")
+	opt, _ := redis.ParseURL(redisDB)
 	rds = redis.NewClient(opt)
 
 	fmt.Println("Migrations Finished")
