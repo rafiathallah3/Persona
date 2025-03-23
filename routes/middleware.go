@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"persona/api/auth"
 	"persona/database"
+	"persona/database/models"
 	"persona/utils"
 	"strings"
 
@@ -13,22 +15,22 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitAkunDB(c *gin.Context) (*gorm.DB, utils.Akun) {
+func InitAkunDB(c *gin.Context) (*gorm.DB, models.Akun) {
 	dbRaw, _ := c.Get("db")
 	db := dbRaw.(*gorm.DB)
 
 	akunRaw, _ := c.Get("akun")
-	akun := akunRaw.(utils.Akun)
+	akun := akunRaw.(models.Akun)
 
 	return db, akun
 }
 
-func InitChat(c *gin.Context) (utils.DataInitChat, error) {
-	dataInitChat := utils.DataInitChat{}
+func InitChat(c *gin.Context) (models.DataInitChat, error) {
+	dataInitChat := models.DataInitChat{}
 
 	db, akun := InitAkunDB(c)
 
-	var dataPost utils.PostChat
+	var dataPost models.PostChat
 	idKarakter := strings.ReplaceAll(c.Param("idkarakter"), "/", "")
 	idChat := strings.ReplaceAll(c.Param("idchat"), "/", "")
 
@@ -40,7 +42,7 @@ func InitChat(c *gin.Context) (utils.DataInitChat, error) {
 				return dataInitChat, errors.New("paramater missing")
 			}
 		} else {
-			dataPost = utils.PostChat{
+			dataPost = models.PostChat{
 				KarakterID: c.PostForm("karakterID"),
 				ChatID:     c.PostForm("chatID"),
 			}
@@ -55,7 +57,7 @@ func InitChat(c *gin.Context) (utils.DataInitChat, error) {
 		fmt.Println(dataPost.Chat)
 	}
 
-	var karakter utils.Karakter
+	var karakter models.Karakter
 	db.Where("ID = ?", idKarakter).First(&karakter)
 
 	dataInitChat.Karakter = karakter
@@ -64,7 +66,7 @@ func InitChat(c *gin.Context) (utils.DataInitChat, error) {
 		return dataInitChat, errors.New("tidak ada karakter")
 	}
 
-	karakterChat := utils.KarakterChat{}
+	karakterChat := models.KarakterChat{}
 	if idChat != "" {
 		db.Where("id = ? AND pechat_id = ?", idChat, akun.ID).Preload("History").First(&karakterChat)
 	}
@@ -84,7 +86,7 @@ func DapatinAkun() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		fmt.Println("dapatinAkun")
 
-		db := database.GetDatabase()
+		db, _ := database.GetDatabase()
 		session := sessions.Default(ctx)
 		user := session.Get("user")
 
@@ -100,7 +102,7 @@ func DapatinAkun() gin.HandlerFunc {
 			joinsString = append(joinsString, "Personalitas")
 		}
 
-		akun := utils.DapatinAkun(db, session, &joinsString)
+		akun := auth.DapatinAkun(db, session, &joinsString)
 
 		ctx.Set("db", db)
 		ctx.Set("akun", akun)
@@ -109,7 +111,6 @@ func DapatinAkun() gin.HandlerFunc {
 
 func CheckAutentikasi(status string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		fmt.Println("AAA")
 		session := sessions.Default(ctx)
 		user := session.Get("user")
 
@@ -121,7 +122,7 @@ func CheckAutentikasi(status string) gin.HandlerFunc {
 
 			// db := database.GetDatabase()
 			akunRaw, _ := ctx.Get("akun")
-			akun := akunRaw.(utils.Akun)
+			akun := akunRaw.(models.Akun)
 			// akun := utils.DapatinAkun(db, session, nil)
 
 			// fmt.Println("ID: " + akun.ID.String())
@@ -138,8 +139,8 @@ func CheckAutentikasi(status string) gin.HandlerFunc {
 		}
 
 		if status == "login" && user != nil {
-			db := database.GetDatabase()
-			akun := utils.DapatinAkun(db, session, nil)
+			db, _ := database.GetDatabase()
+			akun := auth.DapatinAkun(db, session, nil)
 
 			// fmt.Println("ID: " + akun.ID.String())
 			if akun.ID == 0 {

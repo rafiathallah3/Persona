@@ -78,22 +78,36 @@
                 {{ end }}
             </div>
             <div class="col-sm-4">
-                <div class="mx-4">
+                <form id="form-filter" onsubmit="gantiFilter(event)" class="mx-4">
                     <h3 class="text-center">Filter</h3>
                     <hr>
-                    <select class="form-select" aria-label="Default select example">
-                        <option selected>Genre</option>
-                        <option value="1">Anime</option>
-                        <option value="1">Comic</option>
-                        <option value="1">Movie</option>
-                        <option value="3">Girl</option>
-                        <option value="2">Boy</option>
+                    <input type="text" class="text-white mb-2 rounded" name="nama" value="{{ if .karakterCari.Nama }}{{ .karakterCari.Nama }}{{ end }}" style="background-color: #212121; border: 0; border: 1px solid rgb(68, 68, 68); height: 40px; resize: none; width: 100%" placeholder="Name" />
+                    <select class="form-select mb-2" name="genre" onchange="gantiFilter(event)" aria-label="Default select example">
+                        <option {{ if eq .karakterCari.Kategori "" }}selected{{ end }} value="">Genre</option>
+                        <option {{ if eq .karakterCari.Kategori "Anime" }}selected{{ end }} value="Anime">Anime</option>
+                        <option {{ if eq .karakterCari.Kategori "Comic" }}selected{{ end }} value="Comic">Comic</option>
+                        <option {{ if eq .karakterCari.Kategori "Movie" }}selected{{ end }} value="Movie">Movie</option>
+                        <option {{ if eq .karakterCari.Kategori "Girl" }}selected{{ end }} value="Girl">Girl</option>
+                        <option {{ if eq .karakterCari.Kategori "Boy" }}selected{{ end }} value="Boy">Boy</option>
                     </select>
-                </div>
+                </form>
             </div>
         </div>
     </div>
 
+    <script>
+        function gantiFilter(event) {
+            event.preventDefault();
+            
+            let form = new FormData(document.getElementById("form-filter"));
+            let url = "/search?";
+            for (let [key, value] of form) {
+                url += key + "=" + value + "&";
+            }
+
+            location.href = url;
+        }
+    </script>
     {{ template "body.html" }}
 </body>
 </html>

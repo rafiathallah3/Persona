@@ -48,7 +48,7 @@
 
     <div class="container">
         {{ if .flash }}
-        {{.flash}}
+        {{ .flash }}
         <div class="alert alert-success mt-3">WHAT</div>
         {{ end }}
         <div class="text-white h3 mt-3">{{ if .karakter.ID}}Edit{{ else }}Create{{ end }} Character {{ if .karakter.ID }}| Link: <a href="/chat/{{.karakter.ID}}">Character</a> {{ end }}</div>

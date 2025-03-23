@@ -461,6 +461,7 @@
         }
 
         let CooldownKirimPesan = false;
+        let ChatID = "{{ .chatid }}";
         function KlikSend() {
             if(CooldownKirimPesan) {
                 return;
@@ -502,22 +503,21 @@
             $.ajax({
                 url: "/api/chat",
                 type: "POST",
-                data: JSON.stringify({ "karakterID": "{{ .karakter.ID }}", "chat": pesan, chatID: "{{ .chatid }}" }),
+                data: JSON.stringify({ "karakterID": "{{ .karakter.ID }}", "chat": pesan, chatID: ChatID }),
                 contentType: "application/json"
             }).done(v => {
                 if(v.chat === undefined) {
                     return;
                 }
 
-                SemuaUlangiPesan = [{...v, posisi: SemuaUlangiPesan.length + 1}];
-                // localStorage.setItem("ulangi_chat", JSON.stringify([{chat: v.chat, id: v.id}]));
+                ulangiPesan = [v.chat];
+                ChatID = v.karakterChatID;
 
-                isiLocalStroage["{{ .chatid }}"] = null;
-                localStorage.setItem("ulangi_chat", JSON.stringify(isiLocalStroage));
                 PosisiLanjutanChat = 0;
-                $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= SemuaUlangiPesan.length - 1 ? "none" : "block");
+                $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= ulangiPesan.length - 1 ? "none" : "block");
                 $("#lanjutan-kiri").css("display", PosisiLanjutanChat <= 0 ? "none" : "block");
-
+                sessionStorage.setItem("posisi_{{ .chatid }}", PosisiLanjutanChat);
+                
                 $("button.ulangi-pesan").parent().remove();
                 $("#loading-chat").parent().remove();
 
@@ -559,21 +559,9 @@
                 $("#loading-chat").parent().remove();
 
                 $("#tempat_chat").append(TambahinText(v.chat, v.id))
+                sessionStorage.setItem("posisi_{{ .chatid }}", PosisiLanjutanChat + 1);
 
-                // PosisiLanjutanChat = 0;
-                // SemuaUlangiPesan = [{chat: v.chatDulu, id: v.id}];
-                if(SemuaUlangiPesan.length >= 0) {
-                    SemuaUlangiPesan.splice(0, 0, {...v, posisi: SemuaUlangiPesan.length});
-                    // SemuaUlangiPesan.push({chat: v.chat, id: v.id});    
-                }
-
-                isiLocalStroage["{{ .chatid }}"] = JSON.stringify(SemuaUlangiPesan);
-                localStorage.setItem("ulangi_chat", JSON.stringify(isiLocalStroage));
-
-                chat_ini["{{ .chatid }}"] = PosisiLanjutanChat;
-                localStorage.setItem("posisi_chat", JSON.stringify(chat_ini));
-                // WE NEED THIS TO BE SERVER SIDED BECAUSE ALL THE TEXT SAVED  ON THE SERVER!!!
-                // AND THE SERVER USE THE CHAT HISTORY TO GET ALL THE TEXT AND NOT CLIENT!!! 😖😭😭
+                ulangiPesan.push(v.chat);
 
                 $("#lanjutan-ulang").removeClass("d-none");
                 $("#lanjutan-ulang").addClass("d-flex");
@@ -585,22 +573,29 @@
             });
         }
 
-        let PosisiLanjutanChat = 0;
+        let PosisiLanjutanChat = parseInt(sessionStorage.getItem("posisi_{{ .chatid }}") ?? "0");
+        let CooldownLanjutanChat = false;
         function LanjutanChat(status, IdPesan) {
-            if((status !== "kanan" && status !== "kiri") || SemuaUlangiPesan.length <= 1) {
+            if((status !== "kanan" && status !== "kiri") || ulangiPesan.length <= 1 || CooldownLanjutanChat) {
                 return;
             }
+            CooldownLanjutanChat = true;
 
             PosisiLanjutanChat += status === "kanan" ? 1 : -1;
-            PosisiLanjutanChat = clamp(PosisiLanjutanChat, 0, SemuaUlangiPesan.length - 1);
-            chat_ini["{{ .chatid }}"] = PosisiLanjutanChat;
-            localStorage.setItem("posisi_chat", JSON.stringify(chat_ini));
+            PosisiLanjutanChat = clamp(PosisiLanjutanChat, 0, ulangiPesan.length - 1);
+            sessionStorage.setItem("posisi_{{ .chatid }}", PosisiLanjutanChat);
 
-            $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= SemuaUlangiPesan.length - 1 ? "none" : "block");
+            $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= ulangiPesan.length - 1 ? "none" : "block");
             $("#lanjutan-kiri").css("display", PosisiLanjutanChat <= 0 ? "none" : "block");
-            
-            $(`#textchat-${SemuaUlangiPesan[PosisiLanjutanChat].id}`).html(RenderText(SemuaUlangiPesan[PosisiLanjutanChat].chat));
-            UpdatePesan(SemuaUlangiPesan[PosisiLanjutanChat].chat, IdPesan, false);
+
+            const PesanBot = $(".p-2.text-awal.background-abuabu");
+            $(PesanBot[PesanBot.length - 1]).html(RenderText(ulangiPesan[PosisiLanjutanChat]));
+
+            UpdatePesan(ulangiPesan[PosisiLanjutanChat], IdPesan, false);
+
+            setTimeout(() => {
+                CooldownLanjutanChat = false;
+            }, 2000);
         }
 
         let CooldownHapus = false;
@@ -615,7 +610,7 @@
             $.ajax({
                 url: "/api/chat/hapuspesan",
                 type: "POST",
-                data: JSON.stringify({ karakterID: "{{ .karakter.ID }}", chatID: "{{ .chatid }}" }),
+                data: JSON.stringify({ karakterID: "{{ .karakter.ID }}", chatID: ChatID }),
                 contentType: "application/json"
             }).done(v => {
                 if(v.status !== "sukses" || IsiOmongan.length - 2 < 0) {
@@ -650,7 +645,7 @@
             $.ajax({
                 url: "/api/chat/sarankalimat",
                 type: "POST",
-                data: JSON.stringify({ "karakterID": "{{ .karakter.ID }}", chatID: "{{ .chatid }}" }),
+                data: JSON.stringify({ "karakterID": "{{ .karakter.ID }}", chatID: ChatID }),
                 contentType: "application/json"
             }).done(v => {
                 $("#sarankalimat").css("display", "block");
@@ -705,7 +700,7 @@
             $.ajax({
                 url: "/api/chat/updatepesan",
                 type: "POST",
-                data: JSON.stringify({ karakterID: "{{ .karakter.ID }}", chat: EditTextPesan, pesanID: IdPesan, chatID: "{{ .chatid }}" }),
+                data: JSON.stringify({ karakterID: "{{ .karakter.ID }}", chat: EditTextPesan, pesanID: IdPesan, chatID: ChatID }),
                 contentType: "application/json"
             }).done(v => {
                 if(v.status !== "sukses") {
@@ -840,35 +835,17 @@
             $("#Personalitas").modal("show");
         }
 
-        let SemuaUlangiPesan = [];
+        const ulangiPesan = [
+            {{range .ulangiPesan}}
+                {{.}},
+            {{end}}
+        ];
 
-        const chat_ini = JSON.parse(localStorage.getItem("posisi_chat") ?? "{}");
-        if(chat_ini["{{ .chatid }}"] === undefined) {
-            chat_ini["{{ .chatid }}"] = 0;
-        }
-        PosisiLanjutanChat = chat_ini["{{ .chatid }}"];
-
-        const isiLocalStroage = JSON.parse(localStorage.getItem("ulangi_chat") ?? "{}");
-        const RawIsiUlangiPesan = JSON.parse(isiLocalStroage["{{ .chatid }}"] ?? "[]");
-        SemuaUlangiPesan.push(...RawIsiUlangiPesan);
-    
-        if(RawIsiUlangiPesan.length <= 0) {
-            "{{ $Hasil := index .isi .PanjangChat }}"
-            SemuaUlangiPesan.push({
-                chat: "{{ $Hasil.Chat }}",
-                id: "{{ $Hasil.ID }}",
-                posisi: 0,
-            });
-        }
-
-        isiLocalStroage["{{ .chatid }}"] = JSON.stringify(SemuaUlangiPesan);
-        localStorage.setItem("ulangi_chat", JSON.stringify(isiLocalStroage));
-        
-        if(SemuaUlangiPesan.length > 0) {
+        if(ulangiPesan.length > 0) {
             $("#lanjutan-ulang").removeClass("d-none");
             $("#lanjutan-ulang").addClass("d-flex");
 
-            $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= SemuaUlangiPesan.length - 1 ? "none" : "block");
+            $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= ulangiPesan.length - 1 ? "none" : "block");
             $("#lanjutan-kiri").css("display", PosisiLanjutanChat <= 0 ? "none" : "block");
         }
     </script>
