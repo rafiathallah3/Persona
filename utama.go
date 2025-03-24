@@ -52,6 +52,8 @@ func IndexPage(ctx *gin.Context) {
 	var rawSemuaChat []models.KarakterChat
 	db.Preload("History").Preload("Karakter").Where("pechat_id = ?", akun.ID).Find(&rawSemuaChat)
 
+	fmt.Println(ctx.Request.Cookies())
+
 	var listChat []models.ListChat
 	for _, value := range rawSemuaChat {
 		listChat = append(listChat, models.ListChat{
@@ -807,7 +809,14 @@ func main() {
 
 	r := gin.Default()
 
-	r.Use(sessions.Sessions("session", cookie.NewStore(database.SecretKey)))
+	store := cookie.NewStore(database.SecretKey)
+	store.Options(sessions.Options{
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	})
+	r.Use(sessions.Sessions("session", store))
 	r.SetFuncMap(template.FuncMap{
 		"PanjangArrayKurangSatu": utils.PanjangArrayKurangSatu,
 	})
