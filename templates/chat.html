@@ -511,12 +511,11 @@
                 }
 
                 ulangiPesan = [v.chat];
-                ChatID = v.karakterChatID;
 
                 PosisiLanjutanChat = 0;
                 $("#lanjutan-kanan").css("display", PosisiLanjutanChat >= ulangiPesan.length - 1 ? "none" : "block");
                 $("#lanjutan-kiri").css("display", PosisiLanjutanChat <= 0 ? "none" : "block");
-                sessionStorage.setItem("posisi_{{ .chatid }}", PosisiLanjutanChat);
+                sessionStorage.setItem(`posisi_${ChatID}`, PosisiLanjutanChat);
                 
                 $("button.ulangi-pesan").parent().remove();
                 $("#loading-chat").parent().remove();
@@ -835,7 +834,7 @@
             $("#Personalitas").modal("show");
         }
 
-        const ulangiPesan = [
+        let ulangiPesan = [
             {{range .ulangiPesan}}
                 {{.}},
             {{end}}

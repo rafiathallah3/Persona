@@ -405,6 +405,8 @@ func ChatHandler(c *gin.Context) {
 			"chat": nil,
 		})
 
+		fmt.Println("ERROR KIRIM PESAN ", err)
+
 		return
 	}
 
@@ -429,11 +431,12 @@ func ChatHandler(c *gin.Context) {
 
 	cs := chat.BuatChat(client, dataChat.Karakter, akun.Personalitas.DefaultPersonalitas(akun.Username), genAIHistoryChat)
 
-	resp, _ := chat.KirimPesan(cs, dataChat.PostChat.Chat)
+	resp, err := chat.KirimPesan(cs, dataChat.PostChat.Chat)
 	if resp == nil {
 		c.IndentedJSON(http.StatusCreated, gin.H{
 			"chat": nil,
 		})
+		fmt.Println("ERROR KIRIM PESAN ", err)
 		return
 	}
 
@@ -446,9 +449,9 @@ func ChatHandler(c *gin.Context) {
 
 	isiChatID := strconv.FormatUint(dataChat.KarakterChat.History[len(dataChat.KarakterChat.History)-1].ID, 10)
 	c.IndentedJSON(http.StatusCreated, gin.H{
-		"karakterChatID": dataChat.KarakterChat.ID,
-		"chat":           resp.Candidates[0].Content.Parts[0],
-		"id":             isiChatID,
+		"chatid": dataChat.KarakterChat.ID,
+		"chat":   resp.Candidates[0].Content.Parts[0],
+		"id":     isiChatID,
 	})
 }
 

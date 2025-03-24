@@ -90,6 +90,8 @@ func DapatinAkun() gin.HandlerFunc {
 		session := sessions.Default(ctx)
 		user := session.Get("user")
 
+		fmt.Println("SESSION DI MIDDLE WARE", session)
+
 		if user == nil {
 			ctx.Redirect(http.StatusFound, "/login")
 			return
@@ -113,6 +115,7 @@ func CheckAutentikasi(status string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		session := sessions.Default(ctx)
 		user := session.Get("user")
+		fmt.Println("SESSION DI AUTHENTIKASI ", session)
 
 		if status == "akses" {
 			if user == nil {
