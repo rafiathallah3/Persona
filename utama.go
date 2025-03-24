@@ -776,6 +776,7 @@ func LoginHandler(ctx *gin.Context) {
 
 	session.Set("user", akun.ID)
 	session.Save()
+	fmt.Println("SESSION", session.Get("user"))
 
 	ctx.Redirect(http.StatusFound, "/")
 }
@@ -814,11 +815,13 @@ func main() {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 	r.Use(sessions.Sessions("session", store))
 	r.SetFuncMap(template.FuncMap{
 		"PanjangArrayKurangSatu": utils.PanjangArrayKurangSatu,
 	})
+	r.SetTrustedProxies(nil)
 	r.Static("/assets", "./assets")
 	r.LoadHTMLGlob("templates/*")
 	r.StaticFile("/favicon.ico", "./assets/IconPer.png")
