@@ -19,6 +19,7 @@ var rds *redis.Client
 func Connect() {
 	conectDB := utils.DapatinEnvVariable("DATABASE")
 	redisDB := utils.DapatinEnvVariable("REDIS")
+
 	db, _ = gorm.Open(postgres.Open(conectDB), &gorm.Config{})
 	fmt.Println("Database Connected")
 

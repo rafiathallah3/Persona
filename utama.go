@@ -20,7 +20,7 @@ import (
 	"persona/utils"
 
 	"github.com/gin-contrib/sessions"
-	gormsessions "github.com/gin-contrib/sessions/gorm"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/google/generative-ai-go/genai"
 	"github.com/redis/go-redis/v9"
@@ -806,10 +806,8 @@ func main() {
 	defer client.Close()
 
 	r := gin.Default()
-	store := gormsessions.NewStore(db, true, database.SecretKey)
 
-	fmt.Println(store, "STRO")
-	r.Use(sessions.Sessions("session", store))
+	r.Use(sessions.Sessions("session", cookie.NewStore(database.SecretKey)))
 	r.SetFuncMap(template.FuncMap{
 		"PanjangArrayKurangSatu": utils.PanjangArrayKurangSatu,
 	})
