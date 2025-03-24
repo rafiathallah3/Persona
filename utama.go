@@ -814,7 +814,6 @@ func main() {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
 	})
 	r.Use(sessions.Sessions("session", store))
 	r.SetFuncMap(template.FuncMap{
